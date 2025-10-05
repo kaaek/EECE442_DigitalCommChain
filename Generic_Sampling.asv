@@ -63,7 +63,7 @@ function [n, xrcon] = reconstruct(t, x_sample, fs)
     end
 end
 
-function xhat = fs(xt, t, n, T)
+function [t, xhat] = fs(xt, t, n, T)
     % FS   Fourier Series approximation
     %   [XHAT, CK] = FS(XT, T, N, T) computes the Fast Fourier Series
     %   approximation of the signal XT defined on the time axis T using
@@ -188,45 +188,37 @@ function reconstructed = reconstructionExample(f0)
     legend show; grid on;
 end
 
-function [t, xt, f_c] = exampleSpeechWave(duration)
+function [t, xt] = exampleSpeechWave(duration)
     t = 0:0.0001:duration;
-    f_c = 50;  % Carrier frequency
+    f_c = 300;  % Carrier frequency
     f_m = 5;    % Message frequency
     xt = (1 + 0.5*cos(2*pi*f_m*t)) .* cos(2*pi*f_c*t);
 end
 
-function xhat = fourierSeriesExample(n)
-    [t, xt, f_c] = exampleSpeechWave(1);             % x(t): 5 second speech wave
+function xhat_optimal = fourierSeriesExample(n)
+    [t, Xt] = exampleSpeechWave(5);             % x(t): 5 second speech wave
     T = 5;                                      % T = 5 to reconstruct the entire 5 second clip.
-    % Control Case
-    f_max = f_c;                                % Max frequency in signal
-    n_optimal = ceil(f_max * T);                % Enough harmonics to capture the carrier
-    xhat1 = fs(xt, t, n_optimal, T);
-    % User case
-    xhat2 = fs(xt, t, n, T);
-    
-    figure;
-    subplot(2, 1, 1);
-    plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
-    hold on;
-    plot(t, xhat1, 'b--', 'DisplayName', 'FS approx.');
-    title('Control Case');
-    xlabel('Time (s)');
-    ylabel('Amplitude');
-    legend show;
-    grid on;
+    % Control Case:
+    f_max = 300;                                % Max frequency in signal
+    n_optimal = ceil(f_max * t);                % Enough harmonics to capture the carrier
+    [t, xhat_optimal] = fs(Xt, t, n_optimal, T);
+    % User case:
+    [t, xhat] = fs(Xt, t, n, t);
 
-    subplot(2, 1, 2);
-    plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
-    hold on;
-    plot(t, xhat2, 'b--', 'DisplayName', 'FS approx.');
-    title('User Case');
-    xlabel('Time (s)');
-    ylabel('Amplitude');
-    legend show;
-    grid on;
+    
+
+
+    % figure;
+    % plot(T, Xt, 'r-', 'DisplayName', 'x(t)');
+    % hold on;
+    % plot(T, xhat_optimal, 'b--', 'DisplayName', 'x hat (t)');
+    % title('Fourier Series Approximation of Speech Wave');
+    % xlabel('Time (s)');
+    % ylabel('Amplitude (V)');
+    % legend show;
+    % grid on;
 end
 
-fourierSeriesExample(225);
+fourierSeriesExample();
 
 % reconstructionExample(12);
