@@ -22,17 +22,29 @@ clc, clearvars
 % (a) For a chunked version x(t) choose an appropriate value of T and compute the Fourier series approximation ˆx(t) for different values of n.
 % fsConstT([90, 95, 100, 125, 300]);
 % (c) Repeat the experiment by varying T while keeping n sufficiently large.
-% fsConstN([1.5, 1.75, 2, 2.25, 3]);
+% fsConstN([1.5, 1.75, 2, 2.1, 2.2]);
 % TO-DO: comment on all the plots.
 
 
 
 % ----------------------------- Quantizer -----------------------------
-% [t, xt, f_c] = exampleSpeechWave(1);
+[t, xt, f_c] = exampleSpeechWave(1);
 % twoLvlQuan(t, xt)
 % TO-DO: comment on distortion.
+M_values = [4, 8, 16, 32, 64, 128];
+MSE_values = zeros(1, length(M_values));
+for i = 1:length(M_values)
+    [xq, MSE] = uniformQuan(M_values(i), t, xt);
+    MSE_values(i) = MSE;
+end
+figure;
+plot(M_values, MSE_values, '-o');
+xlabel('Number of Levels (M)');
+ylabel('Mean Squared Error (MSE)');
+title('MSE vs Number of Levels');
+grid on;
 
-
+% TO-DO: report thresholds and Compare the mean square error (MSE) between different quantization rates.
 
 % ----------------------------- Functions -----------------------------
 function [t_sample, x_sample] = sample(t, xt, fs)
@@ -204,7 +216,7 @@ function [T, x_sample1, fs1, x_sample2, fs2] = example1(f0) % Sample a pure (cos
     subplot(2, 1, 2);
     plot(t_sample2, x_sample2, 'o-', 'DisplayName', sprintf('fs = %.1f Hz', fs2));
     hold on;
-    plot(T, X, 'r-', 'DisplayName', 'Original Signal');
+    plot(T, X, 'r--', 'DisplayName', 'Original Signal');
     title('Sampling at fs = 2 * fN');
     xlabel('Time (s)');
     ylabel('Amplitude (V)');
@@ -253,9 +265,9 @@ function fsConstT(n_values)
     xhat1 = fs(xt, t, n_optimal, T);
     % ---------------------- Figure --------------------
     figure;
-    plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+    plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
     hold on;
-    plot(t, xhat1, 'b--', 'DisplayName', 'FS approx.');
+    plot(t, xhat1, 'b-', 'DisplayName', 'FS approx.');
     title(sprintf('Control Case for n = n_{optimal} = %.1f | T = %.1f', n_optimal, T));
     xlabel('Time (s)');
     ylabel('Amplitude (V)');
@@ -269,9 +281,9 @@ function fsConstT(n_values)
         E_i = errEn(t, xt, xhat_i); % Needed for the energy plot later.
         E(i) = E_i;
         subplot(length(n_values), 1, i);
-        plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+        plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
         hold on;
-        plot(t, xhat_i, 'b--', 'DisplayName', sprintf('FS approx. for n = %d', n_i));
+        plot(t, xhat_i, 'b-', 'DisplayName', sprintf('FS approx. for n = %d', n_i));
         title(sprintf('Case for n = %d | T = %.1f', n_i, T));
         xlabel('Time (s)');
         ylabel('Amplitude (V)');
@@ -299,9 +311,9 @@ function fsConstN(T_values)
     xhat1 = fs(xt, t, N, T);
     % ---------------------- Figure --------------------
     figure;
-    plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+    plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
     hold on;
-    plot(t, xhat1, 'b--', 'DisplayName', 'FS approx.');
+    plot(t, xhat1, 'b-', 'DisplayName', 'FS approx.');
     title(sprintf('Control Case for T = duration = %.1f | N = %d', T, N));
     xlabel('Time (s)');
     ylabel('Amplitude (V)');
@@ -317,9 +329,9 @@ function fsConstN(T_values)
         E(i) = E_i;
         
         subplot(length(T_values), 1, i);
-        plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+        plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
         hold on;
-        plot(t, xhat_i, 'b--', 'DisplayName', sprintf('FS approx. for T = %.1f', T_i));
+        plot(t, xhat_i, 'b-', 'DisplayName', sprintf('FS approx. for T = %.1f', T_i));
         title(sprintf('Case for T = %.1f | N = %d', T_i, N));
         xlabel('Time (s)');
         ylabel('Amplitude (v)');
@@ -374,6 +386,23 @@ function xq = quan(x, thr, lvl)
     end
 end
 
+function [xq, MSE] = uniformQuan(M, t, xt)
+    lvl = linspace(min(xt), max(xt), M);
+    thr = (lvl(1:end-1) + lvl(2:end)) / 2;
+    xq = quan(xt, thr, lvl);
+    figure;
+    plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
+    hold on;
+    stem(t, xq, 'b-', 'LineStyle', 'none', 'DisplayName', 'Quantized Signal');
+    title('Original Signal vs Quantized Signal');
+    xlabel('Time (s)');
+    ylabel('Amplitude (V)');
+    legend show;
+    grid on;
+    
+    MSE = mean((xt - xq).^2);
+end
+
 function xq = twoLvlQuan(t, xt)
     t_1 = mean(xt);
     l_1 = (min(xt)+t_1)/2;
@@ -383,9 +412,9 @@ function xq = twoLvlQuan(t, xt)
     lvl = [l_1, l_2];
 
     xq = quan(xt, thr, lvl);
-    plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+    plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
     hold on;
-    stem(t, xq, 'b--', 'LineStyle', 'none', 'DisplayName', 'Quantized Signal');
+    stem(t, xq, 'b-', 'LineStyle', 'none', 'DisplayName', 'Quantized Signal');
     xlabel('Time (s)');
     ylabel('Amplitude (V)');
     legend show;
