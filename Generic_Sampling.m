@@ -1,5 +1,31 @@
-clc, clearvars % Flush everything before running
+% ----------------------------------------------------------------------
+% authors: Khalil El Kaaki, Mouhammad Kandakji
+% 
+% Note on the use of AI: Copilot wrote the help sections for our functions
+% (the big comment blocks following function declarations)
+% 
+% ----------------------------------------------------------------------
 
+clc, clearvars
+
+
+
+% ----------------------------- Sampling  -----------------------------
+f0 = 10;
+example1(f0);
+% TO-DO: Comment on the figures in the report
+
+
+
+% ----------------------------- Fourier -----------------------------
+% (a) For a chunked version x(t) choose an appropriate value of T and compute the Fourier series approximation ˆx(t) for different values of n.
+fsConstT([90, 95, 100, 125, 300]);
+% (c) Repeat the experiment by varying T while keeping n sufficiently large.
+fsConstN([1.5, 1.75, 2, 2.25, 3]);
+% TO-DO: comment on all the plots.
+
+
+% ----------------------------- Functions -----------------------------
 function [t_sample, x_sample] = sample(t, xt, fs)
     %SAMPLE   Sample a signal at a given frequency
     %   [T_SAMPLE, X_SAMPLE] = SAMPLE(T, XT, FS) resamples the input signal
@@ -65,7 +91,7 @@ end
 
 function xhat = fs(xt, t, n, T)
     % FS   Fourier Series approximation
-    %   [XHAT, CK] = FS(XT, T, N, T) computes the Fast Fourier Series
+    %   [XHAT, CK] = FS(XT, T, N, T) computes the Fourier Series
     %   approximation of the signal XT defined on the time axis T using
     %   N coefficients.
     %
@@ -123,7 +149,30 @@ function cj = fcoef(t, xt, T, j) % Helper function that calculates the jth fouri
     cj = (1/T) * trapz(t, xt .* exp(-1i*2*pi*j*t/T));
 end
 
-function [T, x_sample1, fs1, x_sample2, fs2] = samplingExample(f0) % Sample a pure (cosine) tone at frequencies 0.5*fN and 2*fN example.
+function E = errEn (t, xt, xhat)
+    % ERREREN   Error Energy Calculation
+    %   E = ERREREN(T, XT, XHAT) computes the error energy between the 
+    %   original signal XT and the approximated signal XHAT over the time 
+    %   axis T.
+    %
+    %   Inputs:
+    %       T    - row vector, time axis
+    %       XT   - row vector, original signal values
+    %       XHAT - row vector, approximated signal values
+    %
+    %   Output:
+    %       E - scalar, computed error energy
+    %
+    %   Example:
+    %       t = 0:0.001:1;
+    %       xt = cos(2*pi*10*t);
+    %       xhat = xt + 0.1*randn(size(xt)); % Example of an approximated signal
+    %       E = errEn(t, xt, xhat);
+    integrand = (xt - xhat).^2;
+    E = trapz(t, integrand);
+end
+
+function [T, x_sample1, fs1, x_sample2, fs2] = example1(f0) % Sample a pure (cosine) tone at frequencies 0.5*fN and 2*fN example.
     T = 0:0.001:1;          % Time axis for the original signal (approximately continuous.)
     X = cos(2*pi*f0*T);     % Array of cosine values.
     fN = 2*f0;              % Nyquist's sampling frequency is twice the frequency we care to retain (f0 in this case.)
@@ -131,15 +180,6 @@ function [T, x_sample1, fs1, x_sample2, fs2] = samplingExample(f0) % Sample a pu
     fs2 = 2*fN;
     [t_sample1, x_sample1] = sample(T, X, fs1);
     [t_sample2, x_sample2] = sample(T, X, fs2);
-    
-    % Draw two plots for each frequency with the original signal included in each for comparison.
-    figure; 
-    plot(T, X, 'r-', 'DisplayName', 'Original Signal');
-    title('Original Signal x(t) = cos(2 pi f_0 t)');
-    xlabel('Time (s)');
-    ylabel('Amplitude (V)');
-    legend show;
-    grid on;
 
     figure;
     subplot(2, 1, 1);
@@ -161,10 +201,7 @@ function [T, x_sample1, fs1, x_sample2, fs2] = samplingExample(f0) % Sample a pu
     ylabel('Amplitude (V)');
     legend show;
     grid on;
-end
-
-function reconstructed = reconstructionExample(f0)
-    [T, x_sample1, fs1, x_sample2, fs2] = samplingExample(f0);
+    % ------------------------ Reconstruction  ------------------------
     [n1, xrcon1] = reconstruct(T, x_sample1, fs1);
     [n2, xrcon2] = reconstruct(T, x_sample2, fs2);
 
@@ -195,38 +232,97 @@ function [t, xt, f_c] = exampleSpeechWave(duration)
     xt = (1 + 0.5*cos(2*pi*f_m*t)) .* cos(2*pi*f_c*t);
 end
 
-function xhat = fourierSeriesExample(n)
-    [t, xt, f_c] = exampleSpeechWave(1);             % x(t): 5 second speech wave
-    T = 5;                                      % T = 5 to reconstruct the entire 5 second clip.
-    % Control Case
+function fsConstT(n_values)
+    % ---------------------- Init ----------------------
+    duration = 2;
+    [t, xt, f_c] = exampleSpeechWave(duration);        % x(t): speech wave
+    T = duration;                                      % T = duration of speech signal to reconstruct the entire clip.
+    E = zeros(1,length(n_values));                     % Init energy array
+    % ------------------ Control Case ------------------
     f_max = f_c;                                % Max frequency in signal
     n_optimal = ceil(f_max * T);                % Enough harmonics to capture the carrier
     xhat1 = fs(xt, t, n_optimal, T);
-    % User case
-    xhat2 = fs(xt, t, n, T);
-    
+    % ---------------------- Figure --------------------
     figure;
-    subplot(2, 1, 1);
     plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
     hold on;
     plot(t, xhat1, 'b--', 'DisplayName', 'FS approx.');
-    title('Control Case');
+    title(sprintf('Control Case for n = n_{optimal} = %.1f | T = %.1f', n_optimal, T));
     xlabel('Time (s)');
-    ylabel('Amplitude');
+    ylabel('Amplitude (V)');
     legend show;
     grid on;
-
-    subplot(2, 1, 2);
-    plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
-    hold on;
-    plot(t, xhat2, 'b--', 'DisplayName', 'FS approx.');
-    title('User Case');
-    xlabel('Time (s)');
-    ylabel('Amplitude');
+    % --------------------------------------------------
+    figure;
+    for i = 1:length(n_values)
+        n_i = n_values(i);
+        xhat_i = fs(xt, t, n_i, T);
+        E_i = errEn(t, xt, xhat_i); % Needed for the energy plot later.
+        E(i) = E_i;
+        subplot(length(n_values), 1, i);
+        plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+        hold on;
+        plot(t, xhat_i, 'b--', 'DisplayName', sprintf('FS approx. for n = %d', n_i));
+        title(sprintf('Case for n = %d | T = %.1f', n_i, T));
+        xlabel('Time (s)');
+        ylabel('Amplitude (V)');
+        legend show;
+        grid on;
+    end
+    figure;
+    plot(n_values, E, 'o-', 'DisplayName', 'Error Energy vs n values');
+    title('Error Energy vs n values');
+    xlabel('n values');
+    ylabel('Error Energy (E)');
     legend show;
     grid on;
 end
 
-fourierSeriesExample(225);
+function fsConstN(T_values)
+    % ---------------------- Init ----------------------
+    duration = 2;                                      % Any number
+    [t, xt, f_c] = exampleSpeechWave(duration);        % x(t): speech wave
+    E = zeros(1,length(T_values));                       % Init energy array
+    % ------------------ Control Case ------------------
+    T = duration;                                      % T = duration of speech signal to reconstruct the entire clip.
+    f_max = f_c;                                       % Max frequency in signal
+    N = ceil(f_max * T);                               % Enough harmonics to capture the carrier
+    xhat1 = fs(xt, t, N, T);
+    % ---------------------- Figure --------------------
+    figure;
+    plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+    hold on;
+    plot(t, xhat1, 'b--', 'DisplayName', 'FS approx.');
+    title(sprintf('Control Case for T = duration = %.1f | N = %d', T, N));
+    xlabel('Time (s)');
+    ylabel('Amplitude (V)');
+    legend show;
+    grid on;
+    % --------------------------------------------------
+    figure;
+    for i = 1:length(T_values)
+        T_i = T_values(i);
+        xhat_i = fs(xt, t, N, T_i);
 
-% reconstructionExample(12);
+        E_i = errEn(t, xt, xhat_i); % Needed for the energy plot later.
+        E(i) = E_i;
+        
+        subplot(length(T_values), 1, i);
+        plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+        hold on;
+        plot(t, xhat_i, 'b--', 'DisplayName', sprintf('FS approx. for T = %.1f', T_i));
+        title(sprintf('Case for T = %.1f | N = %d', T_i, N));
+        xlabel('Time (s)');
+        ylabel('Amplitude (v)');
+        legend show;
+        grid on;
+    end
+
+    figure;
+    plot(T_values, E, 'o-', 'DisplayName', 'Error Energy vs T values');
+    title('Error Energy vs T values');
+    xlabel('n values');
+    ylabel('Error Energy (E)');
+    legend show;
+    grid on;
+end

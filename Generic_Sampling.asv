@@ -1,4 +1,20 @@
+% ----------------------------------------------------------------------
+% authors: Khalil El Kaaki, Mouhammad Kandakji
+% 
+% Note on the use of AI: Copilot wrote the help sections for our functions
+% (the big comment blocks following function declarations)
+% ----------------------------------------------------------------------
+
 clc, clearvars % Flush everything before running
+
+% --------------------- Sampling below and above nyquist + Reconstruction and analysis --------------------- 
+% TO-DO: Comment on the figures in the report
+f0 = 10;
+example1(f0);
+% --------------------- Fourier --------------------- 
+% (a) For a chunked version x(t) choose an appropriate value of T and compute the Fourier series approximation ˆx(t) for different values of n.
+fsTConst([90, 95, 100, 125, 300]);
+
 
 function [t_sample, x_sample] = sample(t, xt, fs)
     %SAMPLE   Sample a signal at a given frequency
@@ -63,9 +79,9 @@ function [n, xrcon] = reconstruct(t, x_sample, fs)
     end
 end
 
-function [t, xhat] = fs(xt, t, n, T)
+function xhat = fs(xt, t, n, T)
     % FS   Fourier Series approximation
-    %   [XHAT, CK] = FS(XT, T, N, T) computes the Fast Fourier Series
+    %   [XHAT, CK] = FS(XT, T, N, T) computes the Fourier Series
     %   approximation of the signal XT defined on the time axis T using
     %   N coefficients.
     %
@@ -123,7 +139,8 @@ function cj = fcoef(t, xt, T, j) % Helper function that calculates the jth fouri
     cj = (1/T) * trapz(t, xt .* exp(-1i*2*pi*j*t/T));
 end
 
-function [T, x_sample1, fs1, x_sample2, fs2] = samplingExample(f0) % Sample a pure (cosine) tone at frequencies 0.5*fN and 2*fN example.
+function [T, x_sample1, fs1, x_sample2, fs2] = example1(f0) % Sample a pure (cosine) tone at frequencies 0.5*fN and 2*fN example.
+    % ------------------------ Sampling ------------------------
     T = 0:0.001:1;          % Time axis for the original signal (approximately continuous.)
     X = cos(2*pi*f0*T);     % Array of cosine values.
     fN = 2*f0;              % Nyquist's sampling frequency is twice the frequency we care to retain (f0 in this case.)
@@ -133,13 +150,13 @@ function [T, x_sample1, fs1, x_sample2, fs2] = samplingExample(f0) % Sample a pu
     [t_sample2, x_sample2] = sample(T, X, fs2);
     
     % Draw two plots for each frequency with the original signal included in each for comparison.
-    figure; 
-    plot(T, X, 'r-', 'DisplayName', 'Original Signal');
-    title('Original Signal x(t) = cos(2 pi f_0 t)');
-    xlabel('Time (s)');
-    ylabel('Amplitude (V)');
-    legend show;
-    grid on;
+    % figure; 
+    % plot(T, X, 'r-', 'DisplayName', 'Original Signal');
+    % title(sprintf('Original Signal x(t) = cos(2 pi f_0 t) for f_0 = %.1f Hz', f0));
+    % xlabel('Time (s)');
+    % ylabel('Amplitude (V)');
+    % legend show;
+    % grid on;
 
     figure;
     subplot(2, 1, 1);
@@ -161,10 +178,7 @@ function [T, x_sample1, fs1, x_sample2, fs2] = samplingExample(f0) % Sample a pu
     ylabel('Amplitude (V)');
     legend show;
     grid on;
-end
-
-function reconstructed = reconstructionExample(f0)
-    [T, x_sample1, fs1, x_sample2, fs2] = samplingExample(f0);
+    % ------------------------ Reconstruction  ------------------------
     [n1, xrcon1] = reconstruct(T, x_sample1, fs1);
     [n2, xrcon2] = reconstruct(T, x_sample2, fs2);
 
@@ -188,37 +202,84 @@ function reconstructed = reconstructionExample(f0)
     legend show; grid on;
 end
 
-function [t, xt] = exampleSpeechWave(duration)
+function [t, xt, f_c] = exampleSpeechWave(duration)
     t = 0:0.0001:duration;
-    f_c = 300;  % Carrier frequency
+    f_c = 50;  % Carrier frequency
     f_m = 5;    % Message frequency
     xt = (1 + 0.5*cos(2*pi*f_m*t)) .* cos(2*pi*f_c*t);
 end
 
-function xhat_optimal = fourierSeriesExample(n)
-    [t, Xt] = exampleSpeechWave(5);             % x(t): 5 second speech wave
-    T = 5;                                      % T = 5 to reconstruct the entire 5 second clip.
-    % Control Case:
-    f_max = 300;                                % Max frequency in signal
-    n_optimal = ceil(f_max * t);                % Enough harmonics to capture the carrier
-    [t, xhat_optimal] = fs(Xt, t, n_optimal, T);
-    % User case:
-    [t, xhat] = fs(Xt, t, n, t);
+function fsTConst(n_values)
+    [t, xt, f_c] = exampleSpeechWave(2);        % x(t): speech wave
+    T = 2;                                      % T = duration of speech signal to reconstruct the entire clip.
+    % Control Case
+    f_max = f_c;                                % Max frequency in signal
+    n_optimal = ceil(f_max * T);                % Enough harmonics to capture the carrier
+    xhat1 = fs(xt, t, n_optimal, T);
 
-    
+    figure;
+    % subplot(2, 1, 1);
+    plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+    hold on;
+    plot(t, xhat1, 'b--', 'DisplayName', 'FS approx.');
+    title(sprintf('Control Case for n = n_{optimal} = %.1f', n_optimal));
+    xlabel('Time (s)');
+    ylabel('Amplitude');
+    legend show;
+    grid on;
 
-
-    % figure;
-    % plot(T, Xt, 'r-', 'DisplayName', 'x(t)');
+    % User case
+    % xhat2 = fs(xt, t, n, T);
+    % 
+    % subplot(2, 1, 2);
+    % plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
     % hold on;
-    % plot(T, xhat_optimal, 'b--', 'DisplayName', 'x hat (t)');
-    % title('Fourier Series Approximation of Speech Wave');
+    % plot(t, xhat2, 'b--', 'DisplayName', 'FS approx.');
+    % title(sprintf('User Case for n = n_{user} = %.1f', n));
     % xlabel('Time (s)');
-    % ylabel('Amplitude (V)');
+    % ylabel('Amplitude');
     % legend show;
     % grid on;
+
+    
+    % n_values = [1, 5, 10, 20];  % Array of user-defined n values
+    figure;
+    for i = 1:length(n_values)
+        n_i = n_values(i);
+        xhat_i = fs(xt, t, n_i, T);
+        
+        subplot(length(n_values), 1, i);
+        plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+        hold on;
+        plot(t, xhat_i, 'b--', 'DisplayName', sprintf('FS approx. for n = %d', n_i));
+        title(sprintf('Case for n = %d', n_i));
+        xlabel('Time (s)');
+        ylabel('Amplitude (v)');
+        legend show;
+        grid on;
+    end
 end
 
-fourierSeriesExample();
-
-% reconstructionExample(12);
+function fsNConst(T_values)
+    [t, xt, f_c] = exampleSpeechWave(2);        % x(t): speech wave
+    f_max = f_c;                                % Max frequency in signal
+    n_values = ceil(f_max .* T_values);                % Enough harmonics to capture the carrier
+    % xhat1 = fs(xt, t, n_optimal, T);
+    
+    figure;
+    for i = 1:length(T_values)
+        T_i = T_values(i);
+        n_i = ceil(f_max * T_i);  % Calculate the required number of harmonics
+        xhat_i = fs(xt, t, n_i, T_i);
+        
+        subplot(length(T_values), 1, i);
+        plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+        hold on;
+        plot(t, xhat_i, 'b--', 'DisplayName', sprintf('FS approx. for T = %.1f', T_i));
+        title(sprintf('Case for T = %.1f', T_i));
+        xlabel('Time (s)');
+        ylabel('Amplitude (v)');
+        legend show;
+        grid on;
+    end
+end
