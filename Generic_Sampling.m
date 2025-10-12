@@ -1,9 +1,10 @@
 % ----------------------------------------------------------------------
 % authors: Khalil El Kaaki, Mouhammad Kandakji
 % 
-% Note on the use of AI: Copilot wrote the help sections for our functions
-% (the big comment blocks following function declarations)
-% 
+% Note on the use of AI:
+% * Copilot wrote the help sections for our functions
+%       (the big comment blocks following function declarations)
+% * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
 clc, clearvars
@@ -11,18 +12,26 @@ clc, clearvars
 
 
 % ----------------------------- Sampling  -----------------------------
-f0 = 10;
-example1(f0);
+% f0 = 10;
+% example1(f0);
 % TO-DO: Comment on the figures in the report
 
 
 
 % ----------------------------- Fourier -----------------------------
 % (a) For a chunked version x(t) choose an appropriate value of T and compute the Fourier series approximation ˆx(t) for different values of n.
-fsConstT([90, 95, 100, 125, 300]);
+% fsConstT([90, 95, 100, 125, 300]);
 % (c) Repeat the experiment by varying T while keeping n sufficiently large.
-fsConstN([1.5, 1.75, 2, 2.25, 3]);
+% fsConstN([1.5, 1.75, 2, 2.25, 3]);
 % TO-DO: comment on all the plots.
+
+
+
+% ----------------------------- Quantizer -----------------------------
+% [t, xt, f_c] = exampleSpeechWave(1);
+% twoLvlQuan(t, xt)
+% TO-DO: comment on distortion.
+
 
 
 % ----------------------------- Functions -----------------------------
@@ -321,8 +330,64 @@ function fsConstN(T_values)
     figure;
     plot(T_values, E, 'o-', 'DisplayName', 'Error Energy vs T values');
     title('Error Energy vs T values');
-    xlabel('n values');
+    xlabel('T values');
     ylabel('Error Energy (E)');
+    legend show;
+    grid on;
+end
+
+function xq = quan(x, thr, lvl)
+    % quan - Quantizes the input signal based on specified thresholds and levels.
+    %
+    % Syntax:
+    %   xq = quan(x, thr, lvl)
+    %
+    % Inputs:
+    %   x   - Input signal to be quantized (vector).
+    %   thr - Thresholds for quantization (vector). The length of thr should be one less than the length of lvl.
+    %   lvl - Levels corresponding to the thresholds (vector). The length of lvl should be one more than the length of thr.
+    %
+    % Outputs:
+    %   xq  - Quantized output signal (vector) of the same size as input x.
+    %
+    % Description:
+    %   The function quantizes the input signal x based on the provided thresholds and levels. 
+    %   Each value in x is replaced by the corresponding level based on the defined thresholds.
+    %   If a value in x is less than or equal to the first threshold, it is assigned the first level.
+    %   If it is greater than the last threshold, it is assigned the last level. 
+    %   Values between thresholds are assigned the corresponding levels.
+    xq = zeros(size(x));
+    for i = 1:length(x)
+        x_i = x(i);
+        if x_i <= thr(1)
+            xq(i) = lvl(1);
+        elseif x_i > thr(end)
+            xq(i) = lvl(end);
+        else
+            for j = 1:length(thr)-1
+                if x_i > thr(j) && x_i <= thr(j+1)
+                    xq(i) = lvl(j+1);
+                    break;
+                end
+            end
+        end
+    end
+end
+
+function xq = twoLvlQuan(t, xt)
+    t_1 = mean(xt);
+    l_1 = (min(xt)+t_1)/2;
+    l_2 = (max(xt)+t_1)/2;
+    
+    thr = [t_1];
+    lvl = [l_1, l_2];
+
+    xq = quan(xt, thr, lvl);
+    plot(t, xt, 'r-', 'DisplayName', 'Original Signal');
+    hold on;
+    stem(t, xq, 'b--', 'LineStyle', 'none', 'DisplayName', 'Quantized Signal');
+    xlabel('Time (s)');
+    ylabel('Amplitude (V)');
     legend show;
     grid on;
 end
