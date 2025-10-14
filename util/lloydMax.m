@@ -42,4 +42,24 @@ function [thr, lvl, xq, MSE] = lloydMax(x_samples, M)
     end
     xq = quan(x_samples, thr, lvl);
     MSE = mean((x_samples - xq).^2);
+    plotPdf(x_samples, thr, lvl);
+end
+
+function plotPdf(x_samples, thr, lvl)
+                                                                            % Get the empirical PDF from the sampled sequence x_samples
+    nbins = min(max(80, round(length(x_samples) / 10)), 200);               % Determine number of bins based on data length
+    [pdf, edges] = histcounts(x_samples, nbins, 'Normalization', 'pdf');    % Counts the number of occurences of the values in the sample → empirical PDF
+    centers = (edges(1:end-1) + edges(2:end)) / 2;
+
+    figure;
+    plot(centers, pdf, 'LineWidth', 2);
+    hold on;
+    for k = 1:length(thr)
+        plot([thr(k) thr(k)], ylim, '--w');
+    end
+    stem(lvl, interp1(centers, pdf, lvl, 'linear', 'extrap'), 'r', 'filled');
+    legend('Empirical PDF', 'Thresholds', 'Quantization Levels (red stems)');
+    title('Sample Points PDF Curve, Representation Points, and Thresholds');
+    xlabel('x');
+    ylabel('Pr\{x\}');
 end
