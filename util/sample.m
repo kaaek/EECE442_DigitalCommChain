@@ -1,3 +1,12 @@
+% ----------------------------------------------------------------------
+% authors: Khalil El Kaaki, Mouhammad Kandakji
+% 
+% Note on the use of AI:
+% * Copilot wrote the help sections for our functions
+%       (the big comment blocks following function declarations)
+% * ChatGPT only corrected minor logical and syntax errors.
+% ----------------------------------------------------------------------
+
 function [t_sample, x_sample] = sample(t, xt, fs)
     %SAMPLE   Sample a signal at a given frequency
     %   [T_SAMPLE, X_SAMPLE] = SAMPLE(T, XT, FS) resamples the input signal

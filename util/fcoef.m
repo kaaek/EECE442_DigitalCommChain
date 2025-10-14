@@ -1,3 +1,12 @@
+% ----------------------------------------------------------------------
+% authors: Khalil El Kaaki, Mouhammad Kandakji
+% 
+% Note on the use of AI:
+% * Copilot wrote the help sections for our functions
+%       (the big comment blocks following function declarations)
+% * ChatGPT only corrected minor logical and syntax errors.
+% ----------------------------------------------------------------------
+
 function cj = fcoef(t, xt, T, j) % Helper function that calculates the jth fourier series coefficient.
     %FCOEF   Fourier series coefficient calculation
     %   CJ = FCOEF(T, XT, T, J) computes the j-th Fourier series coefficient

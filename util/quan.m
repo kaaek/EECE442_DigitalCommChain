@@ -1,3 +1,12 @@
+% ----------------------------------------------------------------------
+% authors: Khalil El Kaaki, Mouhammad Kandakji
+% 
+% Note on the use of AI:
+% * Copilot wrote the help sections for our functions
+%       (the big comment blocks following function declarations)
+% * ChatGPT only corrected minor logical and syntax errors.
+% ----------------------------------------------------------------------
+
 function xq = quan(x, thr, lvl)
     % quan - Quantizes the input signal based on specified thresholds and levels.
     %
