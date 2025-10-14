@@ -41,5 +41,5 @@ function [thr, lvl, xq, MSE] = lloydMax(x_samples, M)
         max_change = max(abs(lvl - lvl_prev));              % Calculate the maximum change in levels
     end
     xq = quan(x_samples, thr, lvl);
-    MSE = mean((x - xq).^2);
+    MSE = mean((x_samples - xq).^2);
 end

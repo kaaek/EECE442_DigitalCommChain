@@ -39,7 +39,7 @@ addpath('util')
 % ----------------------------- Lloyd-Max -----------------------------
 M = 20;                             % number of quantization levels
 [t, x, f_c] = exampleSpeechWave(1);
-[thr, lvl, xq] = lloydMax(x, M);
+[thr, lvl, xq, MSE] = lloydMax(x, M);
 
 figure;
 plot(t, x, 'r--', 'DisplayName', 'Original Signal');

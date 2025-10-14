@@ -9,7 +9,7 @@
 
 function lvl = partition(x, thr, M, lvl_prev)
     lvl = zeros(1, M);
-    for k = 1:                                  % For the k-th region:
+    for k = 1:M                                  % For the k-th region
         if k == 1
             lower_bound = -inf;
         else
