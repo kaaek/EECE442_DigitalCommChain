@@ -34,6 +34,20 @@ addpath('util')
 % M_values = [4, 32, 128];
 % MSE_values = zeros(1, length(M_values));
 % [xq, MSE] = uniformQuan(M_values, t, xt);
-
 % TO-DO: report thresholds and Compare the mean square error (MSE) between different quantization rates.
 
+% ----------------------------- Lloyd-Max -----------------------------
+M = 20;                             % number of quantization levels
+[t, x, f_c] = exampleSpeechWave(1);
+[thr, lvl, xq] = lloydMax(x, M);
+
+figure;
+plot(t, x, 'r--', 'DisplayName', 'Original Signal');
+hold on;
+stem(t, xq, 'b-', 'LineStyle', 'None', 'DisplayName', 'Lloyd-Max Quantized');
+hold on;
+xlabel('time (s)');
+ylabel('Amplitude (V)');
+legend show;
+grid on;
+disp(['Mean Squared Error: ', num2str(MSE)]);
