@@ -14,6 +14,7 @@ addpath('util')
 % ----------------------------- Sampling  -----------------------------
 % f0 = 10;
 % example1(f0);
+% 
 % % TO-DO: Comment on the figures in the report
 
 
@@ -23,6 +24,7 @@ addpath('util')
 % fsConstT([100, 105, 110]); % The optimal option goes last
 % (c) Repeat the experiment by varying T while keeping n sufficiently large.
 % fsConstN([1.5, 2, 2.2]);
+% 
 % TO-DO: comment on all the plots.
 
 
@@ -34,20 +36,26 @@ addpath('util')
 % M_values = [4, 32, 128];
 % MSE_values = zeros(1, length(M_values));
 % [xq, MSE] = uniformQuan(M_values, t, xt);
+% 
 % TO-DO: report thresholds and Compare the mean square error (MSE) between different quantization rates.
 
 % ----------------------------- Lloyd-Max -----------------------------
-M = 20;                             % number of quantization levels
-[t, x, f_c] = exampleSpeechWave(10);
-[thr, lvl, xq, MSE] = lloydMax(x, M);
+% M = 20;                             % number of quantization levels
+% [t, x, f_c] = exampleSpeechWave(10);
+% [thr, lvl, xq, MSE] = lloydMax(x, M);
+% 
+% figure;
+% plot(t, x, 'r--', 'DisplayName', 'Original Signal');
+% hold on;
+% stem(t, xq, 'b-', 'LineStyle', 'None', 'DisplayName', 'Lloyd-Max Quantized');
+% hold on;
+% xlabel('time (s)');
+% ylabel('Amplitude (V)');
+% legend show;
+% grid on;
+% disp(['Mean Squared Error: ', num2str(MSE)]);
 
-figure;
-plot(t, x, 'r--', 'DisplayName', 'Original Signal');
-hold on;
-stem(t, xq, 'b-', 'LineStyle', 'None', 'DisplayName', 'Lloyd-Max Quantized');
-hold on;
-xlabel('time (s)');
-ylabel('Amplitude (V)');
-legend show;
-grid on;
-disp(['Mean Squared Error: ', num2str(MSE)]);
+% TO-DO: (g) Integrate your quantization methods into the end-to-end simulation chain.
+% (h) Compare the reconstructed signals with different quantization methods.
+% (i) Discuss trade-offs between rate (number of levels), distortion (MSE), and source
+% statistics.
