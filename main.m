@@ -40,22 +40,23 @@ addpath('util')
 % TO-DO: report thresholds and Compare the mean square error (MSE) between different quantization rates.
 
 % ----------------------------- Lloyd-Max -----------------------------
-% M = 20;                             % number of quantization levels
-% [t, x, f_c] = exampleSpeechWave(10);
-% [thr, lvl, xq, MSE] = lloydMax(x, M);
-% 
-% figure;
-% plot(t, x, 'r--', 'DisplayName', 'Original Signal');
-% hold on;
-% stem(t, xq, 'b-', 'LineStyle', 'None', 'DisplayName', 'Lloyd-Max Quantized');
-% hold on;
-% xlabel('time (s)');
-% ylabel('Amplitude (V)');
-% legend show;
-% grid on;
-% disp(['Mean Squared Error: ', num2str(MSE)]);
+M = 16;                             % number of quantization levels
+tgtMSE = 0.001;
+[t, x, f_c] = exampleSpeechWave(10);
+[thr, lvl, xq] = lloydMax(x, M, tgtMSE);
 
-% TO-DO: (g) Integrate your quantization methods into the end-to-end simulation chain.
+figure;
+plot(t, x, 'r--', 'DisplayName', 'Original Signal');
+hold on;
+stem(t, xq, 'b-', 'LineStyle', 'None', 'DisplayName', 'Lloyd-Max Quantized');
+hold on;
+xlabel('time (s)');
+ylabel('Amplitude (V)');
+legend show;
+grid on;
+
+% TO-DO: * CHANGE STOP CONDITION TO REACHING A MINIMUM MSE
+% (g) Integrate your quantization methods into the end-to-end simulation chain.
 % (h) Compare the reconstructed signals with different quantization methods.
 % (i) Discuss trade-offs between rate (number of levels), distortion (MSE), and source
 % statistics.
