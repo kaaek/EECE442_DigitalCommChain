@@ -84,3 +84,5 @@ end
 function mse = calcMSE(x, f_x)
     mse = mean(abs(x - f_x).^2); % By the law of large numbers
 end
+
+% added new comment
