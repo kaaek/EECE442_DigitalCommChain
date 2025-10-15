@@ -7,7 +7,7 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function [thr, lvl, xq, MSE] = lloydMax(x_samples, M, tgtMSE)
+function [thr, lvl, xq] = lloydMax(x_samples, M, tgtMSE)
     % LLOYDMAX Quantization using Lloyd-Max Algorithm
     %
     % This function implements the Lloyd-Max quantization algorithm to 
@@ -45,6 +45,20 @@ function [thr, lvl, xq, MSE] = lloydMax(x_samples, M, tgtMSE)
 end
 
 function plotPdf(x_samples, thr, lvl)
+    % PLOTPDF Plots the empirical probability density function (PDF) of the input samples
+    %
+    % This function generates a plot of the empirical PDF of the input 
+    % samples along with the quantization thresholds and representation 
+    % levels. It visualizes how the quantization process affects the 
+    % distribution of the input data.
+    %
+    % Inputs:
+    %   x_samples - A vector of input samples for which the PDF is to be plotted.
+    %   thr       - A vector of thresholds used for quantization.
+    %   lvl       - A vector of representation levels after quantization.
+    %
+    % Example:
+    %   plotPdf(x_samples, thr, lvl);
                                                                             % Get the empirical PDF from the sampled sequence x_samples
     nbins = min(max(80, round(length(x_samples) / 10)), 200);               % Determine number of bins based on data length
     [pdf, edges] = histcounts(x_samples, nbins, 'Normalization', 'pdf');    % Counts the number of occurences of the values in the sample → empirical PDF
@@ -84,5 +98,3 @@ end
 function mse = calcMSE(x, f_x)
     mse = mean(abs(x - f_x).^2); % By the law of large numbers
 end
-
-% added new comment
