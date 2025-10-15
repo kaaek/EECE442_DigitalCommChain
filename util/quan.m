@@ -14,7 +14,7 @@ function xq = quan(x, thr, lvl)
     %   xq = quan(x, thr, lvl)
     %
     % Inputs:
-    %   x   - Input signal to be quantized (vector).
+    %   x   - Input signal to be quantized mse vs quantization level M(vector).
     %   thr - Thresholds for quantization (vector). The length of thr should be one less than the length of lvl.
     %   lvl - Levels corresponding to the thresholds (vector). The length of lvl should be one more than the length of thr.
     %

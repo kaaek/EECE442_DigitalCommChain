@@ -76,20 +76,52 @@ M = 16; % number of quantization levels
 [xq, MSE] = uniformQuan(M, t_sample, x_sample);
 
 % (4) Apply Lloyd-Max quantization to the sampled signal:
-tgtMSE = 0.01;
+tgtMSE = 0.001;
 [t_lm, lvl, xq_lm] = lloydMax(x_sample, M, tgtMSE);
 
-% (5) Perform lossless compression using baseline Huffman coding:
-R_uniform = baseline_huffman_V2(xq);
-R_lloyd   = baseline_huffman_V2(xq_lm);
+% (5) Perform lossless compression using baseline Huffman coding (deterministic step):
+C_uniform = baseline_huffman_V2(xq);
+C_lloyd   = baseline_huffman_V2(xq_lm);
 
-% Plot both R_uniform and R_lloyd
+% (6) Decompress
+D_uniform = decode_stream(C_uniform.encoded_bitstring, C_uniform.dict);
+D_lloyd = decode_stream(C_lloyd.encoded_bitstring, C_lloyd.dict);
+x_hat_uniform = double(D_uniform);
+x_hat_lloyd  = double(D_lloyd);
+
+MSE_uniform = mean((xt-x_hat_uniform).^2);
+MSE_lloyd = mean((xt-x_hat_lloyd).^2);
+
+% (7) Plot the reconstructed signals for comparison
 figure;
+
+% Subplot for Uniform Quantized Signal
+subplot(2, 1, 1);
+plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
 hold on;
-bar(1, R_uniform.huffman_avg_bits_per_symbol, 'FaceColor', [0.4 0.6 0.8]);
-bar(2, R_lloyd.huffman_avg_bits_per_symbol, 'FaceColor', [0.8 0.4 0.4]);
-set(gca, 'XTick', [1 2], 'XTickLabel', {'Uniform','Lloyd–Max'});
-ylabel('Average Huffman Length (bits/symbol)');
-title('Lossless Coding Efficiency Comparison');
+plot(t_sample, x_hat_uniform, 'b-', 'DisplayName', 'Uniform Quantized Signal');
+xlabel('Time (s)');
+ylabel('Amplitude (V)');
+legend show;
 grid on;
-hold off;
+title('Uniform Quantization Reconstruction');
+
+% Subplot for Lloyd-Max Quantized Signal
+subplot(2, 1, 2);
+plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
+hold on;
+plot(t_sample, x_hat_lloyd, 'g-', 'DisplayName', 'Lloyd-Max Quantized Signal');
+xlabel('Time (s)');
+ylabel('Amplitude (V)');
+legend show;
+grid on;
+title('Lloyd-Max Quantization Reconstructed');
+
+% (8) Plot the Mean Square Errors
+figure;
+bar([MSE_uniform, MSE_lloyd], 'FaceColor', 'flat');
+set(gca, 'XTick', 1:2, 'XTickLabel', {'Uniform Quantization', 'Lloyd-Max Quantization'});
+ylabel('Mean Square Error (MSE)');
+title('MSE Comparison between Quantization Methods');
+grid on;
+legend('MSE Values', 'Location', 'Best');
