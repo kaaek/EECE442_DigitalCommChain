@@ -62,34 +62,39 @@ addpath('util')
 % statistics.
 
 
-% ----------------------------- Full Chain ----------------------------- %
-% (1) Prepare the input (analog generation):
-[t, xt, f_max] = exampleSpeechWave(2, 50); % twenty-one second long speech signal on a "carrier" frequency of 160 Hz (somewhere between a high-pitched male and a low-pitched female voice)
-f_Nyquist = 2*f_max; % minimum required for perfect reconstruction.
-fs = f_Nyquist;
+% % ----------------------------- Full Chain ----------------------------- %
+% % (1) Prepare the input (analog generation):
+% [t, xt, f_max] = exampleSpeechWave(2, 50); % twenty-one second long speech signal on a "carrier" frequency of 160 Hz (somewhere between a high-pitched male and a low-pitched female voice)
+% f_Nyquist = 2*f_max; % minimum required for perfect reconstruction.
+% fs = f_Nyquist;
 
 % (2) Convert from continuous to discrete x[n]:
-[t_sample, x_sample] = sample(t, xt, fs);
+% [t_sample, x_sample] = sample(t, xt, fs);
+% 
+% % (3) Apply quantization to the sampled signal:
+% M = 16; % number of quantization levels
+% [xq, MSE] = uniformQuan(M, t_sample, x_sample);
+% 
+% % (4) Apply Lloyd-Max quantization to the sampled signal:
+% tgtMSE = 0.01;
+% [t_lm, lvl, xq_lm] = lloydMax(x_sample, M, tgtMSE);
+% 
+% % (5) Perform lossless compression using baseline Huffman coding:
+% R_uniform = baseline_huffman_V2(xq);
+% R_lloyd   = baseline_huffman_V2(xq_lm);
+% 
+% % Plot both R_uniform and R_lloyd
+% figure;
+% hold on;
+% bar(1, R_uniform.huffman_avg_bits_per_symbol, 'FaceColor', [0.4 0.6 0.8]);
+% bar(2, R_lloyd.huffman_avg_bits_per_symbol, 'FaceColor', [0.8 0.4 0.4]);
+% set(gca, 'XTick', [1 2], 'XTickLabel', {'Uniform','Lloyd–Max'});
+% ylabel('Average Huffman Length (bits/symbol)');
+% title('Lossless Coding Efficiency Comparison');
+% grid on;
+% hold off;
+seq = [0 0 1 1 0 2 0 0 0 3 0 1 0 0 0 0 2 0 0 1];
+A   = unique(seq);
 
-% (3) Apply quantization to the sampled signal:
-M = 16; % number of quantization levels
-[xq, MSE] = uniformQuan(M, t_sample, x_sample);
-
-% (4) Apply Lloyd-Max quantization to the sampled signal:
-tgtMSE = 0.01;
-[t_lm, lvl, xq_lm] = lloydMax(x_sample, M, tgtMSE);
-
-% (5) Perform lossless compression using baseline Huffman coding:
-R_uniform = baseline_huffman_V2(xq);
-R_lloyd   = baseline_huffman_V2(xq_lm);
-
-% Plot both R_uniform and R_lloyd
-figure;
-hold on;
-bar(1, R_uniform.huffman_avg_bits_per_symbol, 'FaceColor', [0.4 0.6 0.8]);
-bar(2, R_lloyd.huffman_avg_bits_per_symbol, 'FaceColor', [0.8 0.4 0.4]);
-set(gca, 'XTick', [1 2], 'XTickLabel', {'Uniform','Lloyd–Max'});
-ylabel('Average Huffman Length (bits/symbol)');
-title('Lossless Coding Efficiency Comparison');
-grid on;
-hold off;
+results = block_source_coding(seq, A, [2 3 4], true);
+disp(results)
