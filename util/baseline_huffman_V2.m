@@ -250,7 +250,7 @@ for k = 1:size(edges,1)
     plot([pos(p,1) pos(c,1)], [pos(p,2) pos(c,2)], '-', 'Color', [0.5 0.5 0.5]); % Darker color for branches
     mx = (pos(p,1)+pos(c,1))/2; my = (pos(p,2)+pos(c,2))/2;
     text(mx, my, num2str(b), 'HorizontalAlignment','center', ...
-        'VerticalAlignment','bottom', 'Interpreter','tex');
+        'VerticalAlignment','bottom', 'Color', 'k', 'Interpreter','tex'); % Set text color to black
 end
 for i = 1:n
     isLeaf = isempty(nodes(i).left) && isempty(nodes(i).right);
@@ -263,7 +263,7 @@ for i = 1:n
     end
     text(pos(i,1)+0.02, pos(i,2)-0.05, label, ...
         'HorizontalAlignment','left', 'VerticalAlignment','top', ...
-        'Interpreter','tex');
+        'Color', 'k', 'Interpreter','tex'); % Set text color to black
 end
 axis equal
 xlim([min(pos(:,1))-0.5, max(pos(:,1))+0.5])
