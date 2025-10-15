@@ -76,7 +76,7 @@ M = 16; % number of quantization levels
 [xq, MSE] = uniformQuan(M, t_sample, x_sample);
 
 % (4) Apply Lloyd-Max quantization to the sampled signal:
-tgtMSE = 0.001;
+tgtMSE = 0.0000001;
 [t_lm, lvl, xq_lm] = lloydMax(x_sample, M, tgtMSE);
 
 % (5) Perform lossless compression using baseline Huffman coding (deterministic step):
