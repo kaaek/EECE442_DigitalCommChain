@@ -247,7 +247,7 @@ set(gca,'YDir','reverse');   % root on top
 hold on; axis off;
 for k = 1:size(edges,1)
     p = edges(k,1); c = edges(k,2); b = edges(k,3);
-    plot([pos(p,1) pos(c,1)], [pos(p,2) pos(c,2)], '-', 'Color', [0.5 0.5 0.5]); % Darker color for branches
+    plot([pos(p,1) pos(c,1)], [pos(p,2) pos(c,2)], '-');
     mx = (pos(p,1)+pos(c,1))/2; my = (pos(p,2)+pos(c,2))/2;
     text(mx, my, num2str(b), 'HorizontalAlignment','center', ...
         'VerticalAlignment','bottom', 'Interpreter','tex');
