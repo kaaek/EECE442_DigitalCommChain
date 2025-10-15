@@ -157,10 +157,10 @@ if isempty(node.left) && isempty(node.right)
 end
 out = struct('sym', {}, 'code', {});
 if ~isempty(node.left)
-    out = [out, traverse(node.left, prefix + "0")]; %#ok<AGROW>
+    out = [out, traverse(node.left, prefix + "0")]; 
 end
 if ~isempty(node.right)
-    out = [out, traverse(node.right, prefix + "1")]; %#ok<AGROW>
+    out = [out, traverse(node.right, prefix + "1")]; 
 end
 end
 
@@ -176,7 +176,7 @@ function S = decode_stream(bits, dict)
 trie = struct('next', containers.Map({'0','1'},{[],[]}), 'sym', "");
 triePool = trie; % root
 function id = newNode()
-    triePool(end+1) = struct('next', containers.Map({'0','1'},{[],[]}), 'sym', ""); %#ok<AGROW>
+    triePool(end+1) = struct('next', containers.Map({'0','1'},{[],[]}), 'sym', ""); 
     id = numel(triePool);
 end
 for i = 1:size(dict,1)
@@ -216,12 +216,12 @@ function id = addNode(node)
     if ~isempty(node.left)
         L = addNode(node.left);
         nodes(id).left = L;
-        edges(end+1,:) = [id, L, 0]; %#ok<AGROW>
+        edges(end+1,:) = [id, L, 0]; 
     end
     if ~isempty(node.right)
         R = addNode(node.right);
         nodes(id).right = R;
-        edges(end+1,:) = [id, R, 1]; %#ok<AGROW>
+        edges(end+1,:) = [id, R, 1]; 
     end
 end
 rootId = addNode(root);
@@ -237,25 +237,26 @@ function assignPos(id, depth)
         if ~isempty(nodes(id).left),  assignPos(nodes(id).left,  depth+1); end
         if ~isempty(nodes(id).right), assignPos(nodes(id).right, depth+1); end
         xs = [];
-        if ~isempty(nodes(id).left),  xs(end+1) = pos(nodes(id).left,1);  end %#ok<AGROW>
-        if ~isempty(nodes(id).right), xs(end+1) = pos(nodes(id).right,1); end %#ok<AGROW>
+        if ~isempty(nodes(id).left),  xs(end+1) = pos(nodes(id).left,1);  end 
+        if ~isempty(nodes(id).right), xs(end+1) = pos(nodes(id).right,1); end 
         pos(id,:) = [mean(xs), depth];
     end
 end
 assignPos(rootId, 0);
 set(gca,'YDir','reverse');   % root on top
+set(gca, 'Color', 'k');      % set background color to black
 hold on; axis off;
 for k = 1:size(edges,1)
     p = edges(k,1); c = edges(k,2); b = edges(k,3);
-    plot([pos(p,1) pos(c,1)], [pos(p,2) pos(c,2)], '-');
+    plot([pos(p,1) pos(c,1)], [pos(p,2) pos(c,2)], '-w'); % white edges
     mx = (pos(p,1)+pos(c,1))/2; my = (pos(p,2)+pos(c,2))/2;
     text(mx, my, num2str(b), 'HorizontalAlignment','center', ...
-        'VerticalAlignment','bottom', 'Interpreter','tex');
+        'VerticalAlignment','bottom', 'Interpreter','tex', 'Color', 'w'); % white text
 end
 for i = 1:n
     isLeaf = isempty(nodes(i).left) && isempty(nodes(i).right);
     plot(pos(i,1), pos(i,2), 'o', 'MarkerFaceColor', [0.92 0.92 0.92], ...
-        'MarkerEdgeColor', 'k', 'MarkerSize', 7);
+        'MarkerEdgeColor', 'w', 'MarkerSize', 7); % white edges for nodes
     if isLeaf && nodes(i).sym ~= ""
         label = sprintf('%s\\newline p=%.3f', char(nodes(i).sym), nodes(i).p);
     else
@@ -263,7 +264,7 @@ for i = 1:n
     end
     text(pos(i,1)+0.02, pos(i,2)-0.05, label, ...
         'HorizontalAlignment','left', 'VerticalAlignment','top', ...
-        'Interpreter','tex');
+        'Interpreter','tex', 'Color', 'w'); % white text
 end
 axis equal
 xlim([min(pos(:,1))-0.5, max(pos(:,1))+0.5])

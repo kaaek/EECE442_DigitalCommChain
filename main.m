@@ -93,8 +93,4 @@ addpath('util')
 % title('Lossless Coding Efficiency Comparison');
 % grid on;
 % hold off;
-seq = [0 0 1 1 0 2 0 0 0 3 0 1 0 0 0 0 2 0 0 1];
-A   = unique(seq);
 
-results = block_source_coding(seq, A, [2 3 4], true);
-disp(results)

@@ -158,3 +158,11 @@ for i = 1:numBlocks
     blocks(i,:) = str2double(parts(:)).';
 end
 end
+
+
+seq = [0 0 1 1 0 2 0 0 0 3 0 1 0 0 0 0 2 0 0 1];
+A   = unique(seq);
+
+results = block_source_coding(seq, A, [2 3 4], true);
+disp(results)
+
