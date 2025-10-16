@@ -1,13 +1,15 @@
 function results = block_source_coding(seq, A, K_values, verify_lossless)
-% BLOCK_SOURCE_CODING  (e–h) Block source coding with fixed-length vs. Huffman.
+% BLOCK_SOURCE_CODING  (e–h) Block source coding with fixed-length vs. Huffman,
+% implemented via your baseline_huffman_V2 (no toolbox calls).
+%
 % Usage:
 %   results = block_source_coding(seq, A, [2 3 4], true);
 
 if nargin < 3 || isempty(K_values), K_values = [2 3 4]; end
 if nargin < 4, verify_lossless = true; end
 
-seq = seq(:)';                % row
-A   = unique(A(:)');          % clean
+seq = seq(:)';                 % row vector
+A   = unique(A(:)');           % clean alphabet
 M   = numel(A);
 N   = numel(seq);
 
@@ -31,55 +33,48 @@ for K = K_values
     continue
   end
   trimmed   = seq(1:numBlocks*K);
-  blocksMat = reshape(trimmed, K, numBlocks)';                % [numBlocks x K]
+  blocksMat = reshape(trimmed, K, numBlocks)';                 % [numBlocks x K]
 
-  % Convert each block to a single "symbol" string like "a_b_c"
-  blkSyms = cellstr(join(string(blocksMat), "_", 2));         % cellstr, length=numBlocks
+  % Represent each block as a single symbol: e.g., "a_b_c"
+  blkSyms = cellstr(join(string(blocksMat), "_", 2));          % 1 x numBlocks (cellstr)
 
-  % Unique block symbols and empirical probabilities p(a^k)
+  % Unique block symbols and empirical probabilities p(a^K)
   [uniqBlkSyms, ~, idx] = unique(blkSyms, 'stable');
   counts = accumarray(idx, 1);
   p = counts / sum(counts);
 
-  % ---------- (f)(i) fixed-length coding ----------
-  fixed_bits_per_block  = K * ceil(log2(M));
+  % ---------- (f)(i) fixed-length baseline ----------
+  % We keep the same fixed-length baseline as your original: K * ceil(log2(M))
+  % (i.e., symbol-wise fixed-length applied K times per block).
+  fixed_bits_per_block  = K * ceil(log2(max(M,1)));
   fixed_bits_per_symbol = fixed_bits_per_block / K;
 
-  % ---------- (f)(ii) Huffman on p(a^k) ----------
-  % Build dictionary on the observed blocks only
-  dict = huffmandict(uniqBlkSyms, p);
+  % ---------- (f)(ii) Huffman on p(a^K) via baseline_huffman_V2 ----------
+  % Call your baseline with the *sequence of block symbols*.
+  % We DO NOT pass A_design, because your block fixed-length baseline
+  % is defined separately above (not the dict's "designed" alphabet).
+  Rblk = baseline_huffman_V2(string(blkSyms));   % uses your build/encode/decode & verifies lossless
 
-  % Expected (empirical) length from codeword lengths
-  codeLens = cellfun(@numel, dict(:,2));                       % lengths in bits
-  % Map lengths back to uniqBlkSyms order
-  [~, pos] = ismember(uniqBlkSyms, dict(:,1));
-  L_emp_block = sum(p .* codeLens(pos));
+  % Average Huffman length per *block* (from your Rblk)
+  L_emp_block = Rblk.huffman_avg_bits_per_symbol;           % "symbol" here == one block
   L_emp_sym   = L_emp_block / K;
 
-  % Actual bit length on THIS data
-  bitstream = huffmanenco(blkSyms, dict);                      % vector 0/1
-  L_actual_sym = (numel(bitstream) / numBlocks) / K;
+  % Actual length on THIS data (bitstring actually produced by your encoder)
+  total_bits_actual = double(Rblk.total_bits_huffman);      % strlength returns double-compatible
+  L_actual_sym = (total_bits_actual / numBlocks) / K;
 
-  % Optional: verify lossless reconstruction
+  % Optional: verify lossless reconstruction (already done inside baseline; re-check flag)
   if verify_lossless
-    decBlkSyms = huffmandeco(bitstream, dict);
-    if ~isequal(decBlkSyms(:), blkSyms(:))
-      error('Decode != encode for K=%d (block symbol mismatch).', K);
+    if ~isfield(Rblk, 'lossless_verified') || ~Rblk.lossless_verified
+      error('baseline_huffman_V2 failed lossless verification for K=%d.', K);
     end
-    % Rebuild sequence and compare to trimmed
-    recBlocks = zeros(numBlocks, K);
-    for i = 1:numBlocks
-      parts = split(decBlkSyms{i}, '_');
-      recBlocks(i,:) = str2double(parts(:)).';
-    end
-    recSeq = reshape(recBlocks', 1, []);
-    if ~isequal(recSeq, trimmed)
-      error('Recovered sequence mismatch for K=%d.', K);
-    end
+    % Rebuild the original trimmed sequence from decoded blocks if desired.
+    % Not strictly necessary since baseline already verified, so we skip a second decode.
   end
 
-  % ---------- (g) block entropy H_k and rate H_k/k ----------
-  Hk = -sum(p .* log2(p));
+  % ---------- (g) block entropy H_K and rate H_K/K ----------
+  % Use the empirical block distribution p over uniqBlkSyms
+  Hk = -sum(p .* log2(p + (p==0)));
   Hk_per_sym = Hk / K;
 
   gain_emp    = fixed_bits_per_symbol - L_emp_sym;
@@ -87,21 +82,21 @@ for K = K_values
 
   fprintf('K = %d | blocks = %d | unique blocks = %d\n', K, numBlocks, numel(uniqBlkSyms));
   fprintf('  Fixed length    : %.4f bits/symbol\n', fixed_bits_per_symbol);
-  fprintf('  Huffman (emp)   : %.4f bits/symbol   [H_k/k = %.4f]\n', L_emp_sym, Hk_per_sym);
+  fprintf('  Huffman (emp)   : %.4f bits/symbol   [H_K/K = %.4f]\n', L_emp_sym, Hk_per_sym);
   fprintf('  Huffman (actual): %.4f bits/symbol\n', L_actual_sym);
   fprintf('  Gains vs fixed  : +%.4f (emp), +%.4f (actual)\n\n', gain_emp, gain_actual);
 
   % Fill results row
   T{r,"K"}                         = K;
-  T{r,"NumBlocks"}                = numBlocks;
-  T{r,"Acard"}                    = M;
-  T{r,"Fixed_bits_per_sym"}       = fixed_bits_per_symbol;
-  T{r,"Huff_bits_per_sym_emp"}    = L_emp_sym;
-  T{r,"Huff_bits_per_sym_actual"} = L_actual_sym;
-  T{r,"Hk"}                       = Hk;
-  T{r,"Hk_per_sym"}               = Hk_per_sym;
-  T{r,"Gain_vs_fixed_emp"}        = gain_emp;
-  T{r,"Gain_vs_fixed_actual"}     = gain_actual;
+  T{r,"NumBlocks"}                 = numBlocks;
+  T{r,"Acard"}                     = M;
+  T{r,"Fixed_bits_per_sym"}        = fixed_bits_per_symbol;
+  T{r,"Huff_bits_per_sym_emp"}     = L_emp_sym;
+  T{r,"Huff_bits_per_sym_actual"}  = L_actual_sym;
+  T{r,"Hk"}                        = Hk;
+  T{r,"Hk_per_sym"}                = Hk_per_sym;
+  T{r,"Gain_vs_fixed_emp"}         = gain_emp;
+  T{r,"Gain_vs_fixed_actual"}      = gain_actual;
 end
 
 results = T;
@@ -109,7 +104,7 @@ results = T;
 % ---------- (h) discussion tips ----------
 fprintf('--- DISCUSSION HINTS (h) ---\n');
 fprintf('* Huffman < fixed-length -> skew/structure in block histogram.\n');
-fprintf('* L_emp_sym close to H_k/k -> near-optimal for empirical model.\n');
+fprintf('* L_emp_sym close to H_K/K -> near-optimal for empirical model.\n');
 fprintf('* Larger K helps with short-range dependencies; sparsity limits gains.\n');
 fprintf('* Dead-zones / clustered outputs -> bigger gains; uniform histograms -> smaller gains.\n');
 end
