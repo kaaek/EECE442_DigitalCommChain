@@ -20,7 +20,7 @@ function fsConstN(T_values)
     plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
     hold on;
     plot(t, xhat1, 'b-', 'DisplayName', 'FS approx.');
-    title(sprintf('Control Case for T = duration = %.1f | N = %d', T, N));
+    title(sprintf('[Example] Control Case for T = duration = %.1f | N = %d', T, N));
     xlabel('Time (s)');
     ylabel('Amplitude (V)');
     legend show;
@@ -35,21 +35,25 @@ function fsConstN(T_values)
         E(i) = E_i;
         
         subplot(length(T_values), 1, i);
-        plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
+        plot(t, xt, 'r--', 'DisplayName', 'x(t)');
         hold on;
-        plot(t, xhat_i, 'b-', 'DisplayName', sprintf('FS approx. for T = %.1f', T_i));
+        plot(t, xhat_i, 'b-', 'DisplayName', sprintf('x^(t); T = %.1f', T_i));
         title(sprintf('Case for T = %.1f | N = %d', T_i, N));
         xlabel('Time (s)');
-        ylabel('Amplitude (v)');
+        ylabel('Amplitude (V)');
         legend show;
         grid on;
     end
 
-    figure;
-    plot(T_values, E, 'o-', 'DisplayName', 'Error Energy vs T values');
-    title('Error Energy vs T values');
-    xlabel('T values');
-    ylabel('Error Energy (E)');
-    legend show;
-    grid on;
+    if length(E) > 1
+        figure;
+        plot(T_values, E, 'o-', 'DisplayName', 'Error Energy vs Period T');
+        title('Error Energy vs T values');
+        xlabel('T');
+        ylabel('Error Energy (E)');
+        legend show;
+        grid on;
+    else
+        fprintf('Error Energy: %.4f\n', E);
+    end
 end

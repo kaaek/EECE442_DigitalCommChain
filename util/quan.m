@@ -8,7 +8,7 @@
 % ----------------------------------------------------------------------
 
 function xq = quan(x, thr, lvl)
-    % quan - Quantizes the input signal based on specified thresholds and levels.
+    % quan - Quantizes the input signal based on specified thresholds and levels. This is a helper function for the Uniform quantizer.
     %
     % Syntax:
     %   xq = quan(x, thr, lvl)
@@ -28,19 +28,33 @@ function xq = quan(x, thr, lvl)
     %   If it is greater than the last threshold, it is assigned the last level. 
     %   Values between thresholds are assigned the corresponding levels.
     xq = zeros(size(x));
+    % for i = 1:length(x)
+    %     x_i = x(i);
+    %     if x_i <= thr(1)
+    %         xq(i) = lvl(1);
+    %     elseif x_i > thr(end)
+    %         xq(i) = lvl(end);
+    %     else
+    %         for j = 1:length(thr)-1
+    %             if x_i > thr(j) && x_i <= thr(j+1)
+    %                 xq(i) = lvl(j+1);
+    %                 break;
+    %             end
+    %         end
+    %     end
+    % end
     for i = 1:length(x)
         x_i = x(i);
-        if x_i <= thr(1)
-            xq(i) = lvl(1);
-        elseif x_i > thr(end)
-            xq(i) = lvl(end);
-        else
-            for j = 1:length(thr)-1
-                if x_i > thr(j) && x_i <= thr(j+1)
-                    xq(i) = lvl(j+1);
-                    break;
-                end
+        assigned = false;
+        for j = 1:length(thr)
+            if x_i <= thr(j)
+                xq(i) = lvl(j);
+                assigned = true;
+                break;
             end
+        end
+        if ~assigned
+            xq(i) = lvl(end);
         end
     end
 end

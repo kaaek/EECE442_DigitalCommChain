@@ -31,4 +31,13 @@ function [t_sample, x_sample] = sample(t, xt, fs)
     Ts = 1/fs;
     t_sample = t(1):Ts:t(end);
     x_sample = interp1(t, xt, t_sample, 'spline'); % 'spline' option found by trial and error. Check interp1 documentation.
+
+    figure;
+    plot(t, xt, 'r--', 'DisplayName', 'x(t)'); hold on;
+    stem(t_sample, x_sample, 'b', 'DisplayName', 'x[n]', 'Marker', 'o');
+    xlabel('Time (s)');
+    ylabel('Amplitude (V)');
+    title(sprintf('[TX] Sampler: x(t) vs x[n] sampled at f_s = %.2f Hz', fs));
+    legend show;
+    grid on;
 end

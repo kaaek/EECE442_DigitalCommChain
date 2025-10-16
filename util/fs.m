@@ -9,7 +9,7 @@
 
 function xhat = fs(xt, t, n, T)
     % FS   Fourier Series approximation
-    %   [XHAT, CK] = FS(XT, T, N, T) computes the Fourier Series
+    %   XHAT = FS(XT, T, N, T) computes the Fourier Series
     %   approximation of the signal XT defined on the time axis T using
     %   N coefficients.
     %
@@ -21,7 +21,6 @@ function xhat = fs(xt, t, n, T)
     %
     %   Outputs:
     %       XHAT - row vector, approximated signal values
-    %       CK   - row vector, Fourier coefficients
     %
     %   Example:
     %       t = 0:0.001:1;
@@ -41,4 +40,22 @@ function xhat = fs(xt, t, n, T)
     for idx = 1:length(k)   % Reconstruct signal using c_k
         xhat = xhat + ck(idx) * exp(1i*2*pi*k(idx)*t/T);
     end
+
+    
+    plot(t, xt, xhat);
+
+
+end
+
+function plot(t, xt, xhat)
+    figure;
+    plot(t, xt, 'r--', 'LineWidth', 1.5);
+    hold on;
+    plot(t, real(xhat), 'b-', 'LineWidth', 1.5);
+    hold off;
+    legend('x(t)', 'x^(t)');
+    xlabel('Time (s)');
+    ylabel('Amplitude (V)');
+    title('[TX] Fourier Series: x(t) & x^(t) VS Time (s)');
+    grid on;
 end

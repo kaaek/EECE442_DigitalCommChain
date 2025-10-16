@@ -7,7 +7,7 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function [thr, lvl, xq] = lloydMax(x_samples, M, tgtMSE)
+function [thr, lvl, xq, MSE] = lloydMax(t, x_samples, M, tgtMSE)
     % LLOYDMAX Quantization using Lloyd-Max Algorithm
     %
     % This function implements the Lloyd-Max quantization algorithm to 
@@ -41,7 +41,21 @@ function [thr, lvl, xq] = lloydMax(x_samples, M, tgtMSE)
     end
     xq = quan(x_samples, thr, lvl);
     MSE = mean((x_samples - xq).^2);
-    plotPdf(x_samples, thr, lvl);    
+    plotPdf(x_samples, thr, lvl);
+    
+    fprintf('Mean Squared Error (MSE): %.4f\n', MSE);
+end
+
+function plotXq(t, x_samples, xq)
+    plot(t, x_samples, 'r--', 'DisplayName', 'x[n]');
+    hold on;
+    plot(t, xq, 'b-', 'DisplayName', 'x^[n]');
+    hold off;
+    legend show;
+    title('Lloyd-Max Quantizer: x[n] VS x^[n]');
+    xlabel('Time (s)');
+    ylabel('Amplitude (V)');
+    grid on;                                                      % Add grid for better visualization
 end
 
 function plotPdf(x_samples, thr, lvl)
@@ -61,18 +75,18 @@ function plotPdf(x_samples, thr, lvl)
     %   plotPdf(x_samples, thr, lvl);
                                                                             % Get the empirical PDF from the sampled sequence x_samples
     nbins = min(max(80, round(length(x_samples) / 10)), 200);               % Determine number of bins based on data length
-    [pdf, edges] = histcounts(x_samples, nbins, 'Normalization', 'pdf');    % Counts the number of occurences of the values in the sample → empirical PDF
+    [pdf, edges] = histcounts(x_samples, nbins, 'Normalization', 'pdf');    % Counts the number of occurrences of the values in the sample → empirical PDF
     centers = (edges(1:end-1) + edges(2:end)) / 2;
 
     figure;
-    plot(centers, pdf, 'LineWidth', 2);
+    plot(centers, pdf, 'LineWidth', 2, 'Color', 'b');                      % Change color to blue for the empirical PDF
     hold on;
     for k = 1:length(thr)
-        plot([thr(k) thr(k)], ylim, '--w');
+        plot([thr(k) thr(k)], ylim, '--y', 'LineWidth', 1.5);              % Change threshold lines to black with increased line width
     end
-    stem(lvl, interp1(centers, pdf, lvl, 'linear', 'extrap'), 'r', 'filled');
+    stem(lvl, interp1(centers, pdf, lvl, 'linear', 'extrap'), 'r', 'filled', 'LineWidth', 1.5); % Increase line width for stems
     legend('Empirical PDF', 'Thresholds', 'Quantization Levels (red stems)');
-    title('Sample Points PDF Curve, Representation Points, and Thresholds');
+    title('Lloyd-Max Quantizer: Sample Points Empirical PDF Curve, Representation Points, and Thresholds');
     xlabel('x');
     ylabel('Pr\{x\}');
 end

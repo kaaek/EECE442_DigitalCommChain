@@ -36,4 +36,15 @@ function [n, xrcon] = reconstruct(t, x_sample, fs)
     for k = 1:length(n)
         xrcon = xrcon + x_sample(k) * sinc(fs * (t - t_sample(k)));
     end
+
+    figure;
+    plot(t, xrcon, 'b-', 'DisplayName', 'x\^(t)');
+    hold on;
+    stem(t_sample, x_sample, 'r--', 'DisplayName', 'x[n]', 'MarkerFaceColor', 'r');
+    hold off;
+    xlabel('Time (s)');
+    ylabel('Amplitude (V)');
+    title('[RX] Reconstruction: Sampled Signal x[n] vs Reconstructed Signal x\^(t)');
+    legend show;
+    grid on;
 end

@@ -17,10 +17,10 @@ function fsConstT(n_values)
     n_optimal = ceil(f_max * T);                                % Enough harmonics to capture the entire message's frequency content.
     xhat1 = fs(xt, t, n_optimal, T);
     figure;
-    plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
+    plot(t, xt, 'r--', 'DisplayName', 'x(t)');
     hold on;
-    plot(t, xhat1, 'b-', 'DisplayName', 'FS approx.');
-    title(sprintf('Control Case for n = n_{optimal} = %.1f | T = %.1f', n_optimal, T));
+    plot(t, xhat1, 'b-', 'DisplayName', 'x^(t)');
+    title(sprintf('[Example] Control Case for n = n_{optimal} = %.1f | T = %.1f', n_optimal, T));
     xlabel('Time (s)');
     ylabel('Amplitude (V)');
     legend show;
@@ -42,11 +42,15 @@ function fsConstT(n_values)
         legend show;
         grid on;
     end
-    figure;
-    plot(n_values, E, 'o-', 'DisplayName', 'Error Energy vs n values');
-    title('Error Energy vs n values');
-    xlabel('n values');
-    ylabel('Error Energy (E)');
-    legend show;
-    grid on;
+    if length(E) > 1
+        figure;
+        plot(n_values, E, 'o-', 'DisplayName', 'Error Energy vs Number of Coefficients n');
+        title('Error Energy vs Number of Coefficients n');
+        xlabel('n');
+        ylabel('Error Energy (E)');
+        legend show;
+        grid on;
+    else
+        fprintf('Error Energy: E = %.4f\n', E);
+    end
 end

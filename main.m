@@ -63,65 +63,67 @@ addpath('util')
 
 
 % ----------------------------- Full Chain ----------------------------- %
-% (1) Prepare the input (analog generation):
-[t, xt, f_max] = exampleSpeechWave(2, 50); % twenty-one second long speech signal on a "carrier" frequency of 160 Hz (somewhere between a high-pitched male and a low-pitched female voice)
-f_Nyquist = 2*f_max; % minimum required for perfect reconstruction.
+% (1) Prepare x(t):
+[t, xt, f_max] = exampleSpeechWave(2, 50);
+f_Nyquist = 2*f_max;
 fs = f_Nyquist;
 
-% (2) Convert from continuous to discrete x[n]:
-[t_sample, x_sample] = sample(t, xt, fs);
+% (2) Convert to discrete x[n]:
+[t_sample, x_sample] = sample(t, xt, fs); % includes plot
 
-% (3) Apply quantization to the sampled signal:
-M = 16; % number of quantization levels
-[xq, MSE] = uniformQuan(M, t_sample, x_sample);
+% (3a) Quantize x[n] with x^(t):
+M = 16;
+[xq, MSE] = uniformQuan(M, t_sample, x_sample); % includes plot
 
-% (4) Apply Lloyd-Max quantization to the sampled signal:
-tgtMSE = 0.0000001;
-[t_lm, lvl, xq_lm] = lloydMax(x_sample, M, tgtMSE);
+% (3b) Lloyd-Max quantize x[n]:
+tgtMSE = 0.001;
+[t_lm, lvl, xq_lm, MSE_lm] = lloydMax(t_sample, x_sample, M, tgtMSE); % includes plot
 
-% (5) Perform lossless compression using baseline Huffman coding (deterministic step):
+% (4) Perform lossless compression using baseline Huffman coding (deterministic step):
 C_uniform = baseline_huffman_V2(xq);
 C_lloyd   = baseline_huffman_V2(xq_lm);
 
-% (6) Decompress
+% (5) Decompress (go back to quantized levels, deterministic step)
 D_uniform = decode_stream(C_uniform.encoded_bitstring, C_uniform.dict);
 D_lloyd = decode_stream(C_lloyd.encoded_bitstring, C_lloyd.dict);
-x_hat_uniform = double(D_uniform);
-x_hat_lloyd  = double(D_lloyd);
 
-MSE_uniform = mean((xt-x_hat_uniform).^2);
-MSE_lloyd = mean((xt-x_hat_lloyd).^2);
+% (6) reconstruct the signal
+[n_u, x_hat_uniform] = reconstruct(t, double(D_uniform), fs);
+[n_lm, x_hat_lloyd]  = reconstruct(t, double(D_lloyd), fs);
 
-% (7) Plot the reconstructed signals for comparison
-figure;
-
-% Subplot for Uniform Quantized Signal
-subplot(2, 1, 1);
-plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
-hold on;
-plot(t_sample, x_hat_uniform, 'b-', 'DisplayName', 'Uniform Quantized Signal');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-legend show;
-grid on;
-title('Uniform Quantization Reconstruction');
-
-% Subplot for Lloyd-Max Quantized Signal
-subplot(2, 1, 2);
-plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
-hold on;
-plot(t_sample, x_hat_lloyd, 'g-', 'DisplayName', 'Lloyd-Max Quantized Signal');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-legend show;
-grid on;
-title('Lloyd-Max Quantization Reconstructed');
+% MSE_uniform = mean((xt-x_hat_uniform).^2);
+% MSE_lloyd = mean((xt-x_hat_lloyd).^2);
+% 
+% % (7) Plot the reconstructed signals for comparison
+% figure;
+% 
+% % Subplot for Uniform Quantized Signal
+% subplot(2, 1, 1);
+% plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
+% hold on;
+% plot(t_sample, x_hat_uniform, 'b-', 'DisplayName', 'Uniform Quantized Signal');
+% xlabel('Time (s)');
+% ylabel('Amplitude (V)');
+% legend show;
+% grid on;
+% title('Uniform Quantization Reconstruction');
+% 
+% % Subplot for Lloyd-Max Quantized Signal
+% subplot(2, 1, 2);
+% plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
+% hold on;
+% plot(t_sample, x_hat_lloyd, 'g-', 'DisplayName', 'Lloyd-Max Quantized Signal');
+% xlabel('Time (s)');
+% ylabel('Amplitude (V)');
+% legend show;
+% grid on;
+% title('Lloyd-Max Quantization Reconstructed');
 
 % (8) Plot the Mean Square Errors
-figure;
-bar([MSE_uniform, MSE_lloyd], 'FaceColor', 'flat');
-set(gca, 'XTick', 1:2, 'XTickLabel', {'Uniform Quantization', 'Lloyd-Max Quantization'});
-ylabel('Mean Square Error (MSE)');
-title('MSE Comparison between Quantization Methods');
-grid on;
-legend('MSE Values', 'Location', 'Best');
+% figure;
+% bar([MSE_uniform, MSE_lloyd], 'FaceColor', 'flat');
+% set(gca, 'XTick', 1:2, 'XTickLabel', {'Uniform Quantization', 'Lloyd-Max Quantization'});
+% ylabel('Mean Square Error (MSE)');
+% title('MSE Comparison between Quantization Methods');
+% grid on;
+% legend('MSE Values', 'Location', 'Best');
