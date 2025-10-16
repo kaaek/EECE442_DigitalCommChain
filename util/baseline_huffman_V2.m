@@ -268,3 +268,37 @@ xlim([min(pos(:,1))-0.5, max(pos(:,1))+0.5])
 ylim([min(pos(:,2))-0.5, max(pos(:,2))+0.5])
 hold off
 end
+
+% ---------- Help Section ----------
+% This function implements Huffman coding for data compression.
+% 
+% Inputs:
+%   A          - Array of symbols to be encoded.
+%   p          - Array of probabilities corresponding to each symbol in A.
+%   opts       - (Optional) Structure containing additional options, such as notes.
+%
+% Outputs:
+%   R          - Structure containing the results of the Huffman coding process, including:
+%                - N: Number of symbols
+%                - A_observed: Observed symbols
+%                - A_design: Designed symbols
+%                - counts: Counts of each symbol
+%                - p: Probabilities of each symbol
+%                - entropy_bits_per_symbol: Entropy of the source
+%                - fixed_bits_per_symbol: Fixed length per symbol
+%                - huffman_avg_bits_per_symbol: Average length of Huffman codes
+%                - total_bits_fixed: Total bits for fixed-length encoding
+%                - total_bits_huffman: Total bits for Huffman encoding
+%                - compression_gain_vs_fixed: Compression gain compared to fixed-length encoding
+%                - lossless_verified: Boolean indicating if the encoding is lossless
+%                - dict: Huffman dictionary mapping symbols to codes
+%                - encoded_bitstring: Encoded bit string
+%                - dict_table: Table of symbols, probabilities, codes, and lengths
+%                - tree_root: Root of the Huffman tree
+%                - notes: Additional notes if provided in opts
+%
+% Example usage:
+%   R = huffman_coding(A, p, opts);
+% 
+% This method ensures that the encoding is lossless and provides a means to visualize
+% the Huffman tree structure.
