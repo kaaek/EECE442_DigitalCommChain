@@ -8,6 +8,29 @@
 % ----------------------------------------------------------------------
 
 function block_coding_analysis(seq, A, K_values, verify_lossless)
+% BLOCK_CODING_ANALYSIS Analyze block source coding performance
+%
+% This function performs block source coding analysis on a given sequence
+% using specified parameters. It computes the empirical and theoretical 
+% performance metrics, including entropy and average bits per symbol, 
+% and visualizes the results through plots.
+%
+% Inputs:
+%   seq          - Input sequence to be analyzed (vector or matrix).
+%   A            - Alphabet size used for coding (scalar).
+%   K_values     - Vector of block sizes to analyze (optional).
+%                 Default is [1 2 3 4] if not provided.
+%   verify_lossless - Boolean flag to verify lossless coding (optional).
+%                     Default is true if not provided.
+%
+% Outputs:
+%   The function does not return any outputs but displays results in the 
+%   command window and generates plots for visual analysis.
+%
+% Example:
+%   block_coding_analysis(my_sequence, 256, [1 2 3 4], true);
+%
+% See also: BLOCK_SOURCE_CODING, BASELINE_HUFFMAN_V2
 
 fprintf('========================================\n');
 fprintf('   3.2 Block Source Coding is Running...\n');
