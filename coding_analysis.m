@@ -10,13 +10,6 @@
 
 function coding_analysis(X, OPTS)
 
-% Example 2: Skewed 4-symbol source
-A = ["A","B","C","D"];
-p = [0.5 0.2 0.2 0.1];                 % probability model
-edges = [0 cumsum(p)] + eps;
-x = A(discretize(rand(1,8000), edges)); % generate according to p
-coding_analysis(x, struct('A_design', A));
-
 
 fprintf('========================================\n');
 fprintf('   3.2 Baseline Huffman is Running...\n');
