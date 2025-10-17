@@ -30,6 +30,16 @@ end
 % ---------- run the baseline reference implementation ----------
 R = baseline_huffman_V2(Xn, OPTS);
 
+% ---------- DECODE & VERIFY (added) ----------
+decoded_msg = R.decoded_symbols;
+is_lossless = isequal(string(Xn(:)), decoded_msg);
+
+fprintf('\nDecoded message:\n');
+disp(join(decoded_msg,""))   % print as one string (e.g., abfb)
+fprintf('Lossless verification (isequal): %d\n', is_lossless);
+fprintf('Total coded bits: %d | Bits per symbol: %.4f | Fixed bits/sym: %d\n', ...
+        R.total_bits_huffman, R.bits_per_symbol, R.fixed_bits_per_symbol);
+
 % ---------- pull fields for quick access ----------
 A_obs   = R.A_observed;
 tbl     = R.dict_table;          % Symbol | Probability | Code | Len
@@ -91,7 +101,7 @@ cats = categorical({'Entropy H(A)', 'Avg Huffman l̄', 'Fixed-length'});
 cats = reordercats(cats, {'Entropy H(A)', 'Avg Huffman l̄', 'Fixed-length'});
 
 % Draw bars
-b = bar(cats, vals, 'FaceColor', [0.3 0.6 0.9]);
+bar(cats, vals, 'FaceColor', [0.3 0.6 0.9]);
 ylabel('bits / symbol', 'Color','w');
 ylim([0, max(vals)*1.35]);
 grid on;

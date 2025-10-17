@@ -2,60 +2,51 @@ function R = baseline_huffman_V2(x, opts)
 % BASELINE_HUFFMAN  Baseline Huffman Coding (symbol-wise) + Tree Plot
 % x    : vector of discrete symbols (numeric, char, or strings)
 % opts : (optional) struct with fields:
-%        - A_design : vector/string/cell of the quantizer's designed alphabet
-%        - notes    : arbitrary struct to store quantizer metadata in the result
-%
-% R : struct with results
+%        - A_design : vector/string/cell (designed alphabet)
+%        - notes    : arbitrary struct to store metadata in result R
 
-% ---------- normalize symbols ----------
+% ---------- normalize ----------
 if isnumeric(x)
     x = string(x(:));
 elseif ischar(x) || isstring(x)
     x = string(x(:));
+else
+    error('x must be numeric, char, or string.');
 end
 N = numel(x);
 
-% ---------- observed alphabet ----------
-A_observed = unique(x,'stable');        % observed symbols (stable order)
-M_obs = numel(A_observed);
-
-% ---------- designed alphabet for fixed-length baseline ----------
+% ---------- observed & designed alphabets ----------
+A_observed = unique(x,'stable');
 if nargin >= 2 && isfield(opts,'A_design') && ~isempty(opts.A_design)
-    A_design = string(opts.A_design(:));             % designed codebook
+    A_design = string(opts.A_design(:));
 else
-    A_design = A_observed;                           % fallback
+    A_design = A_observed;
 end
 M_design = numel(A_design);
-L_fixed_per_sym = ceil(log2(max(M_design,1)));      % bits/symbol (baseline)
+
+% fixed-length baseline (guard for |A_design|=1)
+L_fixed_per_sym = max(1, ceil(log2(max(M_design,1))));
 bits_fixed = N * L_fixed_per_sym;
 
-% ---------- empirical modeling & entropy ----------
-[~,~,idx] = unique(x,'stable');         % keep same order as A_observed
-cnt = accumarray(idx,1,[M_obs,1]);
-p = cnt / N;
-H = -sum(p .* log2(p + (p==0)));        % avoid log2(0)
+% ---------- empirical PMF & entropy ----------
+[~,~,idx] = unique(x,'stable');
+cnt = accumarray(idx,1,[numel(A_observed),1]);
+p   = cnt / N;
+H   = -sum(p .* log2(p + (p==0)));
 
-% ---------- Huffman code ----------
+% ---------- build Huffman dict ----------
 [dict, root] = build_huffman_dict(A_observed, p);
 
-% Map symbol -> probability
+% avg length
 sym2p = containers.Map(A_observed, num2cell(p));
-
-% Compute average code length aligned to dict order
-L_avg = 0;
-codeLen   = zeros(size(dict,1),1);
-p_aligned = zeros(size(dict,1),1);
+L_avg = 0; codeLen = zeros(size(dict,1),1); p_aligned = zeros(size(dict,1),1);
 for i = 1:size(dict,1)
-    ai = dict{i,1};     % symbol (string)
-    ci = dict{i,2};     % code
-    li = strlength(ci); 
-    pi = sym2p(ai);     
-    codeLen(i)   = li;
-    p_aligned(i) = pi;
-    L_avg        = L_avg + double(li) * pi;
+    ai = dict{i,1}; ci = dict{i,2};
+    li = strlength(ci); pi = sym2p(ai);
+    codeLen(i) = li; p_aligned(i) = pi; L_avg = L_avg + double(li)*pi;
 end
 
-% Encode / Decode / Verify
+% ---------- encode/decode/verify ----------
 keys   = cellfun(@char, dict(:,1), 'UniformOutput', false);
 values = cellfun(@char, dict(:,2), 'UniformOutput', false);
 codeMap = containers.Map(keys, values);
@@ -63,81 +54,61 @@ encoded = encode_stream(x, codeMap);
 decoded = decode_stream(encoded, dict);
 ok = all(x == string(decoded));
 
-% ---------- Print dictionary ----------
-fprintf('\n--- Huffman Code Dictionary ---\n');
-fprintf(' symbol           p(a)      code     len\n');
-for i = 1:size(dict,1)
-    sym = dict{i,1};
-    pj  = p_aligned(i);
-    cj  = dict{i,2};
-    fprintf(' %-15s  %7.4f    %-8s %d\n', sym, pj, cj, strlength(cj));
-end
-
-% ---------- Missing designed symbols ----------
-missing = setdiff(A_design, A_observed);
-if ~isempty(missing)
-    fprintf('Note: %d designed symbols had zero count: %s\n', ...
-        numel(missing), strjoin(missing, ', '));
-end
-
-% ---------- Results ----------
+% ---------- results ----------
 R = struct();
 R.N = N;
 R.A_observed = A_observed;
 R.A_design   = A_design;
 R.counts = cnt;
 R.p = p;
-R.entropy_bits_per_symbol = H;
-R.fixed_bits_per_symbol = L_fixed_per_sym;
+R.entropy_bits_per_symbol     = H;
+R.fixed_bits_per_symbol       = L_fixed_per_sym;
 R.huffman_avg_bits_per_symbol = L_avg;
-R.total_bits_fixed = bits_fixed;
-R.total_bits_huffman = strlength(encoded);
-R.compression_gain_vs_fixed = 1 - R.total_bits_huffman / bits_fixed;
-R.lossless_verified = ok;
+R.total_bits_fixed            = bits_fixed;
+R.total_bits_huffman          = strlength(encoded);
+R.bits_per_symbol             = R.total_bits_huffman / R.N;
+R.latency_symbols             = 1;
+R.compression_gain_vs_fixed   = 1 - R.total_bits_huffman / bits_fixed;
+R.lossless_verified           = ok;
+R.encoded_bitstring           = encoded;
+R.decoded_symbols             = decoded;
 R.dict = dict;
-R.encoded_bitstring = encoded;
 R.dict_table = table(A_observed(:), p_aligned(:), string(dict(:,2)), double(codeLen(:)), ...
     'VariableNames', {'Symbol','Probability','Code','Len'});
 R.tree_root = root;
 if nargin >= 2 && isfield(opts,'notes'); R.notes = opts.notes; end
 
-% ---------- Sanity checks ----------
-assert(L_avg + 1e-12 >= H, 'Avg code length should be >= entropy');
-assert(L_avg <= R.fixed_bits_per_symbol + 1e-12, 'Avg code length should be <= fixed length');
-
-% ---------- Draw Huffman tree ----------
-figure('Name','Huffman Tree','Color','w');
-plot_huffman_tree(root);
-title('Huffman Code Tree');
-
-% ---------- Summary ----------
+% ---------- print report ----------
 fprintf('\n--- Baseline Huffman Report ---\n');
-fprintf('N=%d, |A_observed|=%d, |A_design|=%d\n', N, numel(A_observed), numel(A_design));
+fprintf('N=%d, |A_obs|=%d, |A_design|=%d\n', N, numel(A_observed), numel(A_design));
 fprintf('Entropy H(A)          = %.4f bits/sym\n', H);
-fprintf('Fixed length (design) = %d bits/sym (total %d)\n', R.fixed_bits_per_symbol, bits_fixed);
-fprintf('Huffman avg length    = %.4f bits/sym (total %d)\n', L_avg, strlength(encoded));
+fprintf('Fixed length          = %d bits/sym (total %d)\n', R.fixed_bits_per_symbol, bits_fixed);
+fprintf('Huffman avg length    = %.4f bits/sym (total %d)\n', L_avg, R.total_bits_huffman);
+fprintf('Bits per symbol       = %.4f\n', R.bits_per_symbol);
 fprintf('Compression vs fixed  = %.2f%%\n', 100*R.compression_gain_vs_fixed);
 fprintf('Lossless verified     = %d\n', ok);
 
+% ---------- dark-mode tree ----------
+figure('Name','Huffman Tree','Color','k');
+plot_huffman_tree(root, true);
+title('Huffman Code Tree','Color','w');
 end
 
-% ===== Helpers =====
+
+% ===== helpers =====
 function [dict, root] = build_huffman_dict(A, p)
 nodes = struct('sym',[], 'p',[], 'left',[], 'right',[]);
-K = numel(A);
-T = repmat(nodes, K, 1);
-for i = 1:K
+T = repmat(nodes, numel(A), 1);
+for i = 1:numel(A)
     T(i).sym = string(A(i));
     T(i).p   = p(i);
-    T(i).left = [];
-    T(i).right = [];
 end
 forest = num2cell(T(:));
 while numel(forest) > 1
-    [~,order] = sort(cellfun(@(n) n.p, forest)); % ascending prob
+    [~,order] = sort(cellfun(@(n) n.p, forest)); 
     forest = forest(order);
     a = forest{1}; b = forest{2};
-    parent = struct('sym',"", 'p', a.p + b.p, 'left', a, 'right', b);
+    parent = struct('sym',"", 'p', a.p+b.p, 'left', a, 'right', b);
     forest = [{parent}; forest(3:end)];
 end
 root = forest{1};
@@ -151,154 +122,129 @@ end
 
 function out = traverse(node, prefix)
 if isempty(node.left) && isempty(node.right)
-    if prefix == ""
-        prefix = "0"; % single-symbol edge case
-    end
+    if prefix == "", prefix = "0"; end
     out = struct('sym', node.sym, 'code', char(prefix));
     return
 end
 out = struct('sym', {}, 'code', {});
-if ~isempty(node.left)
-    out = [out, traverse(node.left, prefix + "0")]; 
-end
-if ~isempty(node.right)
-    out = [out, traverse(node.right, prefix + "1")]; 
-end
+if ~isempty(node.left),  out = [out, traverse(node.left,  prefix+"0")]; end
+if ~isempty(node.right), out = [out, traverse(node.right, prefix+"1")]; end
 end
 
 function bits = encode_stream(S, codeMap)
 buf = strings(numel(S),1);
-for i = 1:numel(S)
-    buf(i) = codeMap(char(S(i)));
-end
+for i = 1:numel(S), buf(i) = codeMap(char(S(i))); end
 bits = char(strjoin(buf, ""));
 end
 
 function S = decode_stream(bits, dict)
 trie = struct('next', containers.Map({'0','1'},{[],[]}), 'sym', "");
-triePool = trie;
-function id = newNode()
-    triePool(end+1) = struct('next', containers.Map({'0','1'},{[],[]}), 'sym', ""); 
-    id = numel(triePool);
-end
-for i = 1:size(dict,1)
-    sym = dict{i,1}; code = dict{i,2};
-    node = 1;
-    for c = code
-        nxt = triePool(node).next(c);
-        if isempty(nxt)
-            nxt = newNode(); 
-            triePool(node).next(c) = nxt; 
-        end
-        node = nxt;
+T = trie;
+    function id = newNode()
+        T(end+1) = struct('next', containers.Map({'0','1'},{[],[]}), 'sym', ""); 
+        id = numel(T);
     end
-    triePool(node).sym = sym;
+for i = 1:size(dict,1)
+    s = dict{i,1}; c = dict{i,2}; cur = 1;
+    for k = 1:numel(c)
+        nxt = T(cur).next(c(k));
+        if isempty(nxt), nxt = newNode(); T(cur).next(c(k)) = nxt; end
+        cur = nxt;
+    end
+    T(cur).sym = s;
 end
-out = strings(0,1);
-node = 1;
-for c = bits
-    node = triePool(node).next(c);
-    if triePool(node).sym ~= ""
-        out(end+1,1) = triePool(node).sym;
-        node = 1;
+out = strings(0,1); cur = 1;
+for k = 1:numel(bits)
+    cur = T(cur).next(bits(k));
+    if T(cur).sym ~= ""
+        out(end+1,1) = T(cur).sym; %#ok<AGROW>
+        cur = 1;
     end
 end
 S = out;
 end
 
-function plot_huffman_tree(root)
+function plot_huffman_tree(root, darkMode)
+if nargin < 2, darkMode = false; end
+
+% Build flat node list (children as indices)
 nodes = struct('sym',{},'p',{},'left',{},'right',{});
 edges = [];
-function id = addNode(node)
-    id = numel(nodes)+1;
-    nodes(id).sym   = node.sym;
-    nodes(id).p     = node.p;
-    nodes(id).left  = [];
-    nodes(id).right = [];
-    if ~isempty(node.left)
-        L = addNode(node.left);
-        nodes(id).left = L;
-        edges(end+1,:) = [id, L, 0]; 
+
+    function id = addNode(n)
+        id = numel(nodes) + 1;
+        nodes(id).sym   = n.sym;
+        nodes(id).p     = n.p;
+        nodes(id).left  = [];
+        nodes(id).right = [];
+        if ~isempty(n.left)
+            L = addNode(n.left);
+            nodes(id).left = L;
+            edges(end+1,:) = [id, L, 0]; %#ok<AGROW>
+        end
+        if ~isempty(n.right)
+            R = addNode(n.right);
+            nodes(id).right = R;
+            edges(end+1,:) = [id, R, 1]; %#ok<AGROW>
+        end
     end
-    if ~isempty(node.right)
-        R = addNode(node.right);
-        nodes(id).right = R;
-        edges(end+1,:) = [id, R, 1]; 
-    end
-end
-rootId = addNode(root);
+addNode(root);
+
+% Assign node positions
 n = numel(nodes);
 pos = zeros(n,2);
 leafX = 0;
-function assignPos(id, depth)
-    isLeaf = isempty(nodes(id).left) && isempty(nodes(id).right);
-    if isLeaf
-        leafX = leafX + 1;
-        pos(id,:) = [leafX, depth];
-    else
-        if ~isempty(nodes(id).left),  assignPos(nodes(id).left,  depth+1); end
-        if ~isempty(nodes(id).right), assignPos(nodes(id).right, depth+1); end
-        xs = [];
-        if ~isempty(nodes(id).left),  xs(end+1) = pos(nodes(id).left,1);  end 
-        if ~isempty(nodes(id).right), xs(end+1) = pos(nodes(id).right,1); end 
-        pos(id,:) = [mean(xs), depth];
+    function assignPos(id, depth)
+        isLeaf = isempty(nodes(id).left) && isempty(nodes(id).right);
+        if isLeaf
+            leafX = leafX + 1;
+            pos(id,:) = [leafX, depth];
+        else
+            if ~isempty(nodes(id).left),  assignPos(nodes(id).left,  depth+1); end
+            if ~isempty(nodes(id).right), assignPos(nodes(id).right, depth+1); end
+            xs = [];
+            if ~isempty(nodes(id).left),  xs(end+1) = pos(nodes(id).left,1);  end %#ok<AGROW>
+            if ~isempty(nodes(id).right), xs(end+1) = pos(nodes(id).right,1); end %#ok<AGROW>
+            pos(id,:) = [mean(xs), depth];
+        end
     end
+assignPos(1,0);
+
+set(gca,'YDir','reverse','Color', (darkMode)*[0 0 0] + (~darkMode)*[1 1 1]);
+axis off; hold on;
+
+if darkMode
+    edgeC = [1 1 1]; txtC = [1 1 1];
+    faceC = [0.2 0.2 0.2]; edgeNode = [1 1 1];
+else
+    edgeC = [0.5 0.5 0.5]; txtC = [0 0 0];
+    faceC = [0.92 0.92 0.92]; edgeNode = [0 0 0];
 end
-assignPos(rootId, 0);
-set(gca,'YDir','reverse');   % root on top
-hold on; axis off;
+
 for k = 1:size(edges,1)
     p = edges(k,1); c = edges(k,2); b = edges(k,3);
-    plot([pos(p,1) pos(c,1)], [pos(p,2) pos(c,2)], '-', 'Color', [0.5 0.5 0.5]);
+    plot([pos(p,1) pos(c,1)], [pos(p,2) pos(c,2)], '-', 'Color', edgeC);
     mx = (pos(p,1)+pos(c,1))/2; my = (pos(p,2)+pos(c,2))/2;
-    text(mx, my, num2str(b), 'HorizontalAlignment','center','VerticalAlignment','bottom', 'Color','k');
+    text(mx, my, num2str(b), 'HorizontalAlignment','center', ...
+         'VerticalAlignment','bottom', 'Color', txtC);
 end
+
 for i = 1:n
     isLeaf = isempty(nodes(i).left) && isempty(nodes(i).right);
-    plot(pos(i,1), pos(i,2), 'o', 'MarkerFaceColor', [0.92 0.92 0.92], 'MarkerEdgeColor', 'k', 'MarkerSize', 7);
+    plot(pos(i,1), pos(i,2), 'o', 'MarkerFaceColor', faceC, ...
+         'MarkerEdgeColor', edgeNode, 'MarkerSize', 7);
     if isLeaf && nodes(i).sym ~= ""
         label = sprintf('%s\\newline p=%.3f', char(nodes(i).sym), nodes(i).p);
     else
         label = sprintf('p=%.3f', nodes(i).p);
     end
-    text(pos(i,1)+0.02, pos(i,2)-0.05, label, 'HorizontalAlignment','left', 'VerticalAlignment','top', 'Color','k');
+    text(pos(i,1)+0.02, pos(i,2)-0.05, label, ...
+         'HorizontalAlignment','left','VerticalAlignment','top','Color',txtC);
 end
+
 axis equal
 xlim([min(pos(:,1))-0.5, max(pos(:,1))+0.5])
 ylim([min(pos(:,2))-0.5, max(pos(:,2))+0.5])
 hold off
 end
 
-% ---------- Help Section ----------
-% This function implements Huffman coding for data compression.
-% 
-% Inputs:
-%   A          - Array of symbols to be encoded.
-%   p          - Array of probabilities corresponding to each symbol in A.
-%   opts       - (Optional) Structure containing additional options, such as notes.
-%
-% Outputs:
-%   R          - Structure containing the results of the Huffman coding process, including:
-%                - N: Number of symbols
-%                - A_observed: Observed symbols
-%                - A_design: Designed symbols
-%                - counts: Counts of each symbol
-%                - p: Probabilities of each symbol
-%                - entropy_bits_per_symbol: Entropy of the source
-%                - fixed_bits_per_symbol: Fixed length per symbol
-%                - huffman_avg_bits_per_symbol: Average length of Huffman codes
-%                - total_bits_fixed: Total bits for fixed-length encoding
-%                - total_bits_huffman: Total bits for Huffman encoding
-%                - compression_gain_vs_fixed: Compression gain compared to fixed-length encoding
-%                - lossless_verified: Boolean indicating if the encoding is lossless
-%                - dict: Huffman dictionary mapping symbols to codes
-%                - encoded_bitstring: Encoded bit string
-%                - dict_table: Table of symbols, probabilities, codes, and lengths
-%                - tree_root: Root of the Huffman tree
-%                - notes: Additional notes if provided in opts
-%
-% Example usage:
-%   R = huffman_coding(A, p, opts);
-% 
-% This method ensures that the encoding is lossless and provides a means to visualize
-% the Huffman tree structure.
