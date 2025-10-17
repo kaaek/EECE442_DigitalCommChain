@@ -27,9 +27,9 @@ disp(results);
 
 % Theoretical baseline H1 from symbol-wise entropy; Empirical baseline L1_emp from symbol-wise Huffman
 seq_syms = cellstr(string(seq(:)));
-R1      = baseline_huffman_V2(seq_syms);       
+R1      = baseline_huffman_V2(seq_syms);       % your existing function
 H1      = R1.entropy_bits_per_symbol;          % H(A)
-L1_emp  = R1.huffman_avg_bits_per_symbol;      %  at K=1 (empirical)
+L1_emp  = R1.huffman_avg_bits_per_symbol;      % \bar{\ell} at K=1 (empirical)
 
 % --- Build vectors sorted by K for plotting ---
 [Ks, ord]         = sort(results.K);
@@ -37,9 +37,10 @@ Hk_per_sym        = results.Hk_per_sym(ord);
 L_emp_per_sym     = results.Huff_bits_per_sym_emp(ord);
 
 % --- Dependency gains vs K ---
-dep_gain_emp = L1_emp - L_emp_per_sym;  
-dep_gain_th  = H1     - Hk_per_sym;      
+dep_gain_emp = L1_emp - L_emp_per_sym;   % empirical: \bar{\ell}_{1} - \bar{\ell}_{K}
+dep_gain_th  = H1     - Hk_per_sym;      % theoretical: H_1 - H_K/K
 
+% Numerical hygiene (clip tiny negatives from float error)
 tol = 1e-12;
 dep_gain_emp(abs(dep_gain_emp) < tol) = 0;
 dep_gain_th(abs(dep_gain_th)   < tol) = 0;
