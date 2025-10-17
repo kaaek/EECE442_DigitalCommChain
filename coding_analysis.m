@@ -5,6 +5,7 @@
 % * Copilot wrote the help sections for our functions
 %       (the big comment blocks following function declarations)
 % * ChatGPT only corrected minor logical and syntax errors.
+% * Dark-mode edits by ChatGPT
 % ----------------------------------------------------------------------
 
 function coding_analysis(X, OPTS)
@@ -38,36 +39,42 @@ Lhuff   = R.huffman_avg_bits_per_symbol;
 N       = R.N;
 
 % ---------- Plot diagnostics ----------
-figure('Name','Baseline Huffman Diagnostics','Color','w');
+figure('Name','Baseline Huffman Diagnostics','Color','k'); % black figure
 
 % (1) Probability bar (sorted)
 subplot(3,1,1);
 [p_sorted, ord] = sort(double(tbl.Probability), 'descend');
 sym_sorted      = string(tbl.Symbol(ord));
-bar(p_sorted, 'DisplayName','p(a)'); grid on; hold on;
-xlabel('Symbol (sorted)'); ylabel('p(a)');
-title('Observed PMF (sorted by probability)', 'FontWeight','bold');
+bar(p_sorted, 'DisplayName','p(a)', 'FaceColor',[0.2 0.6 1]); 
+grid on; hold on;
+xlabel('Symbol (sorted)', 'Color','w'); 
+ylabel('p(a)', 'Color','w');
+title('Observed PMF (sorted by probability)', 'FontWeight','bold','Color','w');
 xticks(1:numel(sym_sorted));
 xticklabels(sym_sorted);
 xtickangle(45);
 legend show;
 
+% Dark mode styling
+set(gca,'Color','k','XColor','w','YColor','w');
+legend('TextColor','w','Color','k');
+
 % (2) Code length bar aligned with the same order
 subplot(3,1,2);
 len_sorted = double(tbl.Len(ord));
-bar(len_sorted, 'DisplayName','$\ell(a)$');  
+bar(len_sorted, 'DisplayName','$\ell(a)$', 'FaceColor',[0.6 0.3 0.9]);  
 grid on; hold on;
-xlabel('Symbol (sorted)');
-ylabel('bits');
+xlabel('Symbol (sorted)', 'Color','w');
+ylabel('bits', 'Color','w');
 title('Huffman Code Lengths $\ell(a)$ (aligned with PMF order)', ...
-      'Interpreter','latex','FontWeight','bold');
+      'Interpreter','latex','FontWeight','bold','Color','w');
 xticks(1:numel(sym_sorted));
 xticklabels(sym_sorted);
 xtickangle(45);
+legend('Interpreter','latex','FontSize',9,'Location','best','TextColor','w','Color','k');
 
-
-legend('Interpreter','latex','FontSize',9,'Location','best');
-
+% Dark mode styling
+set(gca,'Color','k','XColor','w','YColor','w');
 
 % (3) Compare average Huffman length vs. entropy vs. fixed-length
 subplot(3,1,3);
@@ -85,7 +92,7 @@ cats = reordercats(cats, {'Entropy H(A)', 'Avg Huffman l̄', 'Fixed-length'});
 
 % Draw bars
 b = bar(cats, vals, 'FaceColor', [0.3 0.6 0.9]);
-ylabel('bits / symbol');
+ylabel('bits / symbol', 'Color','w');
 ylim([0, max(vals)*1.35]);
 grid on;
 
@@ -93,13 +100,15 @@ grid on;
 for i = 1:numel(vals)
     text(i, vals(i) + 0.04*max(vals), sprintf('%.3f', vals(i)), ...
         'HorizontalAlignment','center', 'VerticalAlignment','bottom', ...
-        'FontWeight','bold', 'FontSize',10);
+        'FontWeight','bold', 'FontSize',10, 'Color','w');
 end
 
 title('Comparison of Average Code Lengths: $H(A)$, $\bar{\ell}$, and fixed-length', ...
-      'Interpreter','latex', 'FontWeight','bold', 'FontSize',11);
+      'Interpreter','latex', 'FontWeight','bold', 'FontSize',11, 'Color','w');
 
-set(gca, 'FontWeight','bold', 'FontSize',10);
+set(gca, 'FontWeight','bold', 'FontSize',10, 'Color','k', 'XColor','w', 'YColor','w');
+legend('TextColor','w','Color','k');
+set(gcf,'Color','k'); % keep full figure dark
 
 % ---------- High-level summary --------------------
 fprintf('\nBaseline Huffman Report (symbol-wise):\n');
