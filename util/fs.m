@@ -41,13 +41,15 @@ function xhat = fs(xt, t, n, T)
         xhat = xhat + ck(idx) * exp(1i*2*pi*k(idx)*t/T);
     end
 
-    
-    plot(t, xt, xhat);
+    xhat = real(xhat); 
+    % xhat = xhat - mean(imag(xhat)); % In the case there are asymmetrical imaginary components
+
+    % plotFs(t, xt, xhat);
 
 
 end
 
-function plot(t, xt, xhat)
+function plotFs(t, xt, xhat)
     figure;
     plot(t, xt, 'r--', 'LineWidth', 1.5);
     hold on;

@@ -41,7 +41,7 @@ function [thr, lvl, xq, MSE] = lloydMax(t, x_samples, M, tgtMSE)
     end
     xq = quan(x_samples, thr, lvl);
     MSE = mean((x_samples - xq).^2);
-    plotPdf(x_samples, thr, lvl);
+    % plotPdf(x_samples, thr, lvl);
     
     fprintf('Mean Squared Error (MSE): %.4f\n', MSE);
 end
@@ -73,7 +73,9 @@ function plotPdf(x_samples, thr, lvl)
     %
     % Example:
     %   plotPdf(x_samples, thr, lvl);
-                                                                            % Get the empirical PDF from the sampled sequence x_samples
+    
+    % Get the empirical PDF from the sampled sequence x_samples
+    x_samples = real(x_samples);  % Disregard imaginary part
     nbins = min(max(80, round(length(x_samples) / 10)), 200);               % Determine number of bins based on data length
     [pdf, edges] = histcounts(x_samples, nbins, 'Normalization', 'pdf');    % Counts the number of occurrences of the values in the sample → empirical PDF
     centers = (edges(1:end-1) + edges(2:end)) / 2;

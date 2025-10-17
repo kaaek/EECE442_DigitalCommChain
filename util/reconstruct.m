@@ -7,44 +7,25 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function [n, xrcon] = reconstruct(t, x_sample, fs)
-    %RECONSTRUCT   Reconstruct a signal from its samples
-    %   XRCON = RECONSTRUCT(T, X_SAMPLE, FS) reconstructs the original signal
-    %   from the sampled signal X_SAMPLE defined on the time axis T at a 
-    %   sampling frequency FS.
+function xrcon = reconstruct(t_target, x_sample, fs)
+    % RECONSTRUCT reconstructs a continuous signal from its sampled values.
+    %
+    %   XRCON = RECONSTRUCT(T_TARGET, X_SAMPLE, FS) takes a target time vector
+    %   T_TARGET, a vector of sampled signal values X_SAMPLE, and the sampling
+    %   frequency FS. It reconstructs the continuous signal XRCON at the time
+    %   points specified in T_TARGET using the sinc interpolation method.
     %
     %   Inputs:
-    %       T        - row vector, time axis for the original signal
-    %       X_SAMPLE - row vector, sampled signal values
-    %       FS       - scalar, sampling frequency used for sampling
+    %       T_TARGET - A vector of time points at which to reconstruct the signal.
+    %       X_SAMPLE - A vector of sampled signal values.
+    %       FS       - The sampling frequency of the original signal.
     %
     %   Output:
-    %       XRCON    - row vector, reconstructed signal values
-    %
-    %   Example:
-    %       t = 0:0.001:1;
-    %       xt = cos(2*pi*10*t);
-    %       fs = 20;
-    %       [ts, xs] = sample(t, xt, fs);
-    %       xr = reconstruct(t, xs, fs);
-    %       plot(t, xt, 'r-', t, xr, 'b--')
-    %       legend('Original Signal', 'Reconstructed Signal');
-    Ts = 1/fs;
-    n = 0:length(x_sample)-1;
-    t_sample = n*Ts;              
-    xrcon = zeros(size(t));
-    for k = 1:length(n)
-        xrcon = xrcon + x_sample(k) * sinc(fs * (t - t_sample(k)));
+    %       XRCON    - A vector containing the reconstructed signal values at
+    %                   the specified time points in T_TARGET.
+    t_sample = (0:length(x_sample)-1)/fs;
+    xrcon = zeros(size(t_target));
+    for k = 1:length(x_sample)
+        xrcon = xrcon + x_sample(k) * sinc(fs*(t_target - t_sample(k)));
     end
-
-    figure;
-    plot(t, xrcon, 'b-', 'DisplayName', 'x\^(t)');
-    hold on;
-    stem(t_sample, x_sample, 'r--', 'DisplayName', 'x[n]', 'MarkerFaceColor', 'r');
-    hold off;
-    xlabel('Time (s)');
-    ylabel('Amplitude (V)');
-    title('[RX] Reconstruction: Sampled Signal x[n] vs Reconstructed Signal x\^(t)');
-    legend show;
-    grid on;
 end

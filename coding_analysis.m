@@ -7,12 +7,3 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-clc, clearvars;
-addpath('util')
-
-SIGNALDURATION = 2;
-CARRIERFREQUENCY = 50;
-
-sampling_analysis(SIGNALDURATION, CARRIERFREQUENCY);
-fourier_analysis(SIGNALDURATION, CARRIERFREQUENCY);
-quantization_analysis(SIGNALDURATION, CARRIERFREQUENCY);

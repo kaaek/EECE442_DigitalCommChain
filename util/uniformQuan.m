@@ -7,7 +7,7 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function [xq, MSE] = uniformQuan(M, t, xt)
+function [xq, MSE] = uniformQuan(M, t, xt, print)
     % uniformQuan quantizes a signal using uniform quantization.
     %
     % Syntax:
@@ -28,47 +28,22 @@ function [xq, MSE] = uniformQuan(M, t, xt)
     %   and the Mean Squared Error (MSE) between the original and quantized
     %   signals. The function also generates plots to visualize the original
     %   and quantized signals, as well as the MSE against the quantization levels.
-    MSE = zeros(1, length(M));
-    figure;
-    for i = 1:length(M) % Plot the quantized signal
-        lvl = linspace(min(xt), max(xt), M(i));
-        thr = (lvl(1:end-1) + lvl(2:end)) / 2;
-        xq = quan(xt, thr, lvl);
-        subplot(length(M), 1, i)
-        plot(t, xt, 'r--', 'DisplayName', 'x[n]');
-        hold on;
-        stem(t, xq, 'b-', 'LineStyle', 'none', 'MarkerFaceColor', 'b', 'DisplayName', 'x\^[n]');
-        title('[TX] Uniform Quantizer: x[n] vs x\^[n]');
-        xlabel('Time (s)');
-        ylabel('Amplitude (V)');
-        legend show;
-        grid on;
-        MSE(i) = mean((xt - xq).^2);
+    % MSE = zeros(1, length(M));
+    % figure('Name','Uniform Quantizer');
+    % for i = 1:length(M) % Plot the quantized signal
+    lvl = linspace(min(xt), max(xt), M);
+    thr = (lvl(1:end-1) + lvl(2:end)) / 2;
+    xq = quan(xt, thr, lvl);
+    MSE = mean((xt - xq).^2);
+    
+    % Print the quantization levels and thresholds
+    
+    if print
+        fprintf('### Number of Quantization Levels: %s ###\n', num2str(M));
+        fprintf('Quantization Levels:\n');
+        fprintf('%.4f ', lvl);
+        fprintf('\nThresholds:\n');
+        fprintf('%.4f ', thr);
+        fprintf('\n\n\n');
     end
-
-    if length(MSE) > 1
-        figure;
-        plot(M, MSE, 'o-', 'DisplayName', 'MSE vs Quantization Levels');
-        title('[TX] Uniform Quantizer: MSE VS Number of Quantization Levels M');
-        xlabel('M');
-        ylabel('MSE');
-        legend show;
-        grid on;
-    else
-        fprintf('[TX] Uniform Quantizer: Mean Squared Error = %.4f\n', MSE);
-    end
-
-    % lvl = linspace(min(xt), max(xt), M);
-    % thr = (lvl(1:end-1) + lvl(2:end)) / 2;
-    % xq = quan(xt, thr, lvl);
-    % figure;
-    % plot(t, xt, 'r--', 'DisplayName', 'Original Signal');
-    % hold on;
-    % stem(t, xq, 'b-', 'LineStyle', 'none', 'DisplayName', 'Quantized Signal');
-    % title('[TX] Uniform Quantizer: Original Signal VS Quantized Signal');
-    % xlabel('Time (s)');
-    % ylabel('Amplitude (V)');
-    % legend show;
-    % grid on;
-    % MSE = mean((xt - xq).^2);
 end
