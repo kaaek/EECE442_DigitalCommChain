@@ -7,22 +7,53 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
+% ----------------------------------------------------------------------
+% authors: Khalil El Kaaki, Mouhammad Kandakji
+%
+% Note on the use of AI:
+% * Copilot wrote the help sections for our functions
+%       (the big comment blocks following function declarations)
+% * ChatGPT only corrected minor logical and syntax errors.
+% ----------------------------------------------------------------------
 
-function coding_analysis(X, OPTS)
-
-% Example 2: Skewed 4-symbol source
-A = ["A","B","C","D"];
-p = [0.5 0.2 0.2 0.1];                 % probability model
-edges = [0 cumsum(p)] + eps;
-x = A(discretize(rand(1,8000), edges)); % generate according to p
-coding_analysis(x, struct('A_design', A));
-
+function baseline_huffman_analysis(X, OPTS)
+% BASELINE_HUFFMAN_ANALYSIS  Symbol-wise baseline Huffman coding demo
+%
+% This script mirrors the structure/style of sampling_analysis.m:
+%  - Prints a header indicating the section is running
+%  - Normalizes/validates inputs
+%  - Calls baseline_huffman_V2 (our reference implementation)
+%  - Produces tidy, comparable plots (3 stacked subplots)
+%  - Prints a concise, report-ready summary
+%
+% Inputs:
+%   X     : vector of discrete symbols (numeric, char, or strings)
+%   OPTS  : (optional) struct with fields:
+%           - A_design : designed alphabet (cell/char/string/numeric)
+%           - notes    : arbitrary metadata to attach in the result
+%
+% Behavior:
+%   Uses observed PMF to build a symbol-wise Huffman dictionary.
+%   Compares against fixed-length baseline based on |A_design|.
+%   Draws probability and code-length diagnostics analogous to your
+%   plot style in sampling_analysis.m.
+%
+% Outputs:
+%   Printed dictionary (from baseline_huffman_V2), figures, and
+%   a summary of entropy, rates, and compression gains.
+%
+% Example:
+%   S = "HELLO_HELLO_WORLD!!!";
+%   baseline_huffman_analysis(S);
+%
+% Requirements:
+%   - baseline_huffman_V2.m must be on MATLAB path.
 
 fprintf('========================================\n');
 fprintf('   3.2 Baseline Huffman is Running...\n');
 fprintf('========================================\n');
 
-% ---------- --------normalize input ---------------------------
+% ---------- normalize input (mirror style from your baseline) ----------
 if isnumeric(X)
     Xn = string(X(:));
 elseif ischar(X) || isstring(X)
@@ -92,7 +123,21 @@ fprintf('Huffman avg length          : %.4f bits/sym (total %d)\n', Lhuff, R.tot
 fprintf('Compression vs fixed        : %.2f%%\n', 100*R.compression_gain_vs_fixed);
 fprintf('Lossless verified           : %d\n', R.lossless_verified);
 
-
+% ---------- Optional: tiny table preview in Command Window ----------
+try
+    % Show top-k by probability (k ≤ 12 for readability)
+    k = min(12, height(tbl));
+    previewTbl = tbl(ord(1:k), :);
+    disp('Top symbols by probability (preview):');
+    disp(previewTbl);
+catch
+    % ignore
 end
 
+% ---------- TO-DO (report pointers) ----------
+% * Comment on why Huffman lengths track -log2 p(a) and why \ell(a) ≥ H(A).
+% * Explain the role of |A_design| in the fixed-length baseline.
+% * If needed, discuss effect of alphabet skew on compression gain.
+% * (Optional) Add cumulative bit-count plot for streaming scenarios.
 
+end
