@@ -108,3 +108,33 @@ fprintf('* L_emp_sym close to H_K/K -> near-optimal for empirical model.\n');
 fprintf('* Larger K helps with short-range dependencies; sparsity limits gains.\n');
 fprintf('* Dead-zones / clustered outputs -> bigger gains; uniform histograms -> smaller gains.\n');
 end
+
+% Help Section
+% This function performs block source coding using both fixed-length and Huffman coding methods.
+% 
+% Inputs:
+%   seq            - Input sequence to be encoded (vector).
+%   A              - Alphabet used for encoding (vector).
+%   K_values       - Array of block sizes to be used for encoding (vector).
+%   verify_lossless - Boolean flag to verify lossless reconstruction (default is true).
+%
+% Outputs:
+%   results        - A table containing the results of the encoding process, including:
+%                    - K: Block size
+%                    - NumBlocks: Number of blocks formed
+%                    - Acard: Size of the alphabet
+%                    - Fixed_bits_per_sym: Fixed-length bits per symbol
+%                    - Huff_bits_per_sym_emp: Average bits per symbol for empirical Huffman coding
+%                    - Huff_bits_per_sym_actual: Average bits per symbol for actual Huffman coding
+%                    - Hk: Block entropy
+%                    - Hk_per_sym: Entropy per symbol
+%                    - Gain_vs_fixed_emp: Gain in bits per symbol compared to fixed-length (empirical)
+%                    - Gain_vs_fixed_actual: Gain in bits per symbol compared to fixed-length (actual)
+%
+% Example Usage:
+%   results = block_source_coding(seq, A, [2 3 4], true);
+%
+% Notes:
+%   - The function uses a helper function 'baseline_huffman_V2' for Huffman coding.
+%   - The function verifies lossless reconstruction if the verify_lossless flag is set to true.
+%   - The output table can be used for further analysis of the coding efficiency.
