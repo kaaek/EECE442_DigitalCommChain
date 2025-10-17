@@ -1,31 +1,37 @@
-function results = block_source_coding(seq, A, K_values, verify_lossless)
-% BLOCK_SOURCE_CODING  (e–h) Block source coding with fixed-length vs. Huffman,
-% implemented via your baseline_huffman_V2 (no toolbox calls).
-%
-% Usage:
-%   results = block_source_coding(seq, A, [2 3 4], true);
+function [results, artifacts] = block_source_coding(seq, A, K_values, verify_lossless)
+% BLOCK_SOURCE_CODING with built-in decode display + bit throughput, robust artifacts
 
 if nargin < 3 || isempty(K_values), K_values = [2 3 4]; end
 if nargin < 4, verify_lossless = true; end
 
-seq = seq(:)';                 % row vector
-A   = unique(A(:)');           % clean alphabet
+seq = seq(:)';                 
+A   = unique(A(:)');           
 M   = numel(A);
 N   = numel(seq);
 
-fprintf('--- BLOCK SOURCE CODING (e–h) ---\n');
+fprintf('--- BLOCK SOURCE CODING with Decode + Bit Throughput ---\n');
 fprintf('Alphabet size |A| = %d, N = %d\n\n', M, N);
 
-T = table('Size',[numel(K_values) 10], ...
-  'VariableTypes', ["double","double","double","double","double","double","double","double","double","double"], ...
+% We'll build the table dynamically (append rows), safer with skips.
+results = table('Size',[0 12], ...
+  'VariableTypes', repmat("double",1,12), ...
   'VariableNames', ["K","NumBlocks","Acard","Fixed_bits_per_sym","Huff_bits_per_sym_emp", ...
-    "Huff_bits_per_sym_actual","Hk","Hk_per_sym","Gain_vs_fixed_emp","Gain_vs_fixed_actual"]);
+    "Huff_bits_per_sym_actual","Hk","Hk_per_sym","Gain_vs_fixed_emp","Gain_vs_fixed_actual", ...
+    "Total_bits","Bits_per_symbol"]);
 
-r = 0;
+% Predeclare artifacts schema (single empty element), then clear to 0x1
+artifacts = struct( ...
+  'K', [], 'numBlocks', [], 'uniqBlkSyms', {{}}, 'p', [], ...
+  'trimmed', [], 'blocksMat', [], 'blkSyms', {{}}, ...
+  'decoded_blks', {{}}, 'decoded_seq', '', ...
+  'encoded_stream', '', 'total_bits', NaN, 'bits_per_symbol', NaN, ...
+  'Rblk', struct(), ...
+  'fixed_bits_per_block', [], 'fixed_bits_per_symbol', [], ...
+  'L_emp_block', [], 'L_emp_sym', [], 'total_bits_actual', [], 'L_actual_sym', [], ...
+  'Hk', [], 'Hk_per_sym', [] );
+artifacts(1) = [];  % make it 0x1 with the schema fixed
 
 for K = K_values
-  r = r + 1;
-
   % ---------- (e) form non-overlapping K-blocks ----------
   numBlocks = floor(N / K);
   if numBlocks < 1
@@ -33,108 +39,145 @@ for K = K_values
     continue
   end
   trimmed   = seq(1:numBlocks*K);
-  blocksMat = reshape(trimmed, K, numBlocks)';                 % [numBlocks x K]
+  blocksMat = reshape(trimmed, K, numBlocks)';
+  blkSyms   = cellstr(join(string(blocksMat), "_", 2));
 
-  % Represent each block as a single symbol: e.g., "a_b_c"
-  blkSyms = cellstr(join(string(blocksMat), "_", 2));          % 1 x numBlocks (cellstr)
-
-  % Unique block symbols and empirical probabilities p(a^K)
   [uniqBlkSyms, ~, idx] = unique(blkSyms, 'stable');
   counts = accumarray(idx, 1);
   p = counts / sum(counts);
 
   % ---------- (f)(i) fixed-length baseline ----------
-  % We keep the same fixed-length baseline as your original: K * ceil(log2(M))
-  % (i.e., symbol-wise fixed-length applied K times per block).
   fixed_bits_per_block  = K * ceil(log2(max(M,1)));
   fixed_bits_per_symbol = fixed_bits_per_block / K;
 
-  % ---------- (f)(ii) Huffman on p(a^K) via baseline_huffman_V2 ----------
-  % Call your baseline with the *sequence of block symbols*.
-  % We DO NOT pass A_design, because your block fixed-length baseline
-  % is defined separately above (not the dict's "designed" alphabet).
-  Rblk = baseline_huffman_V2(string(blkSyms));   % uses your build/encode/decode & verifies lossless
+  % ---------- (f)(ii) Huffman encode/decode ----------
+  Rblk = baseline_huffman_V2(string(blkSyms));   
 
-  % Average Huffman length per *block* (from your Rblk)
-  L_emp_block = Rblk.huffman_avg_bits_per_symbol;           % "symbol" here == one block
+  L_emp_block = fetchfield_safe(Rblk, ["huffman_avg_bits_per_symbol","avg_bits_per_symbol","Lavg_block"], NaN);
   L_emp_sym   = L_emp_block / K;
 
-  % Actual length on THIS data (bitstring actually produced by your encoder)
-  total_bits_actual = double(Rblk.total_bits_huffman);      % strlength returns double-compatible
+  total_bits_actual = double(fetchfield_safe(Rblk, ["total_bits_huffman","total_bits","bitcount","n_bits"], NaN));
   L_actual_sym = (total_bits_actual / numBlocks) / K;
 
-  % Optional: verify lossless reconstruction (already done inside baseline; re-check flag)
+  % ---------- Bit count + throughput extraction (robust) ----------
+  encoded_stream = fetchfield_safe(Rblk, ["encoded_stream","bitstream","encoded_bits","code"], []);
+  if iscell(encoded_stream), encoded_stream = [encoded_stream{:}]; end
+  if isstring(encoded_stream), encoded_stream = char(encoded_stream); end
+  if isnumeric(encoded_stream), encoded_stream = char(string(encoded_stream)); end
+  if isempty(encoded_stream) && ~isnan(total_bits_actual)
+      % Fall back to the baseline-reported total
+      total_bits = total_bits_actual;
+  else
+      total_bits = numel(encoded_stream);
+  end
+  bits_per_symbol = total_bits / numel(blkSyms);
+  fprintf('K=%d  Bit count: %d bits, Throughput: %.4f bits/symbol\n', K, total_bits, bits_per_symbol);
+
+  % ---------- Decode + verify ----------
+  [decoded_blks, decoded_seq] = local_get_decoded_from_baseline(Rblk, K);
   if verify_lossless
-    if ~isfield(Rblk, 'lossless_verified') || ~Rblk.lossless_verified
-      error('baseline_huffman_V2 failed lossless verification for K=%d.', K);
+    ok = false;
+    if ~isempty(decoded_blks)
+      ok = (numel(decoded_blks) == numel(blkSyms)) && all(string(decoded_blks) == string(blkSyms));
     end
-    % Rebuild the original trimmed sequence from decoded blocks if desired.
-    % Not strictly necessary since baseline already verified, so we skip a second decode.
+    if ~ok && ~isempty(decoded_seq)
+      ok = isequal(char(decoded_seq(:).'), char(trimmed(:).'));
+    end
+    if ~ok
+      error('Lossless check failed for K=%d: decoded output does not match input.', K);
+    else
+      fprintf('  Lossless (baseline decode): OK ✅\n');
+    end
   end
 
-  % ---------- (g) block entropy H_K and rate H_K/K ----------
-  % Use the empirical block distribution p over uniqBlkSyms
+  % ---------- Entropy ----------
   Hk = -sum(p .* log2(p + (p==0)));
   Hk_per_sym = Hk / K;
 
   gain_emp    = fixed_bits_per_symbol - L_emp_sym;
   gain_actual = fixed_bits_per_symbol - L_actual_sym;
 
-  fprintf('K = %d | blocks = %d | unique blocks = %d\n', K, numBlocks, numel(uniqBlkSyms));
-  fprintf('  Fixed length    : %.4f bits/symbol\n', fixed_bits_per_symbol);
-  fprintf('  Huffman (emp)   : %.4f bits/symbol   [H_K/K = %.4f]\n', L_emp_sym, Hk_per_sym);
-  fprintf('  Huffman (actual): %.4f bits/symbol\n', L_actual_sym);
-  fprintf('  Gains vs fixed  : +%.4f (emp), +%.4f (actual)\n\n', gain_emp, gain_actual);
+  % ---------- Print brief summary ----------
+  fprintf('  Fixed=%.4f | Huff(emp)=%.4f | Huff(actual)=%.4f | H_K/K=%.4f | Gain(emp)=%.4f | Gain(actual)=%.4f\n\n', ...
+    fixed_bits_per_symbol, L_emp_sym, L_actual_sym, Hk_per_sym, gain_emp, gain_actual);
 
-  % Fill results row
-  T{r,"K"}                         = K;
-  T{r,"NumBlocks"}                 = numBlocks;
-  T{r,"Acard"}                     = M;
-  T{r,"Fixed_bits_per_sym"}        = fixed_bits_per_symbol;
-  T{r,"Huff_bits_per_sym_emp"}     = L_emp_sym;
-  T{r,"Huff_bits_per_sym_actual"}  = L_actual_sym;
-  T{r,"Hk"}                        = Hk;
-  T{r,"Hk_per_sym"}                = Hk_per_sym;
-  T{r,"Gain_vs_fixed_emp"}         = gain_emp;
-  T{r,"Gain_vs_fixed_actual"}      = gain_actual;
+  % ---------- Append table row (safe) ----------
+  results(end+1,:) = {K, numBlocks, M, fixed_bits_per_symbol, L_emp_sym, L_actual_sym, ...
+                      Hk, Hk_per_sym, gain_emp, gain_actual, total_bits, bits_per_symbol};
+
+  % ---------- Build artifact with the SAME fixed schema every time ----------
+  S = struct( ...
+    'K', K, ...
+    'numBlocks', numBlocks, ...
+    'uniqBlkSyms', {uniqBlkSyms}, ...
+    'p', p, ...
+    'trimmed', trimmed, ...
+    'blocksMat', blocksMat, ...
+    'blkSyms', {blkSyms}, ...
+    'decoded_blks', {decoded_blks}, ...
+    'decoded_seq', char(decoded_seq), ...
+    'encoded_stream', char(encoded_stream), ...
+    'total_bits', total_bits, ...
+    'bits_per_symbol', bits_per_symbol, ...
+    'Rblk', Rblk, ...
+    'fixed_bits_per_block', fixed_bits_per_block, ...
+    'fixed_bits_per_symbol', fixed_bits_per_symbol, ...
+    'L_emp_block', L_emp_block, ...
+    'L_emp_sym', L_emp_sym, ...
+    'total_bits_actual', total_bits_actual, ...
+    'L_actual_sym', L_actual_sym, ...
+    'Hk', Hk, ...
+    'Hk_per_sym', Hk_per_sym );
+  artifacts(end+1) = S;   %#ok<AGROW>  % same fields as predeclared schema
 end
 
-results = T;
-
-% ---------- (h) discussion tips ----------
-fprintf('--- DISCUSSION HINTS (h) ---\n');
-fprintf('* Huffman < fixed-length -> skew/structure in block histogram.\n');
-fprintf('* L_emp_sym close to H_K/K -> near-optimal for empirical model.\n');
-fprintf('* Larger K helps with short-range dependencies; sparsity limits gains.\n');
-fprintf('* Dead-zones / clustered outputs -> bigger gains; uniform histograms -> smaller gains.\n');
+fprintf('--- Done ---\n');
 end
 
-% Help Section
-% This function performs block source coding using both fixed-length and Huffman coding methods.
-% 
-% Inputs:
-%   seq            - Input sequence to be encoded (vector).
-%   A              - Alphabet used for encoding (vector).
-%   K_values       - Array of block sizes to be used for encoding (vector).
-%   verify_lossless - Boolean flag to verify lossless reconstruction (default is true).
-%
-% Outputs:
-%   results        - A table containing the results of the encoding process, including:
-%                    - K: Block size
-%                    - NumBlocks: Number of blocks formed
-%                    - Acard: Size of the alphabet
-%                    - Fixed_bits_per_sym: Fixed-length bits per symbol
-%                    - Huff_bits_per_sym_emp: Average bits per symbol for empirical Huffman coding
-%                    - Huff_bits_per_sym_actual: Average bits per symbol for actual Huffman coding
-%                    - Hk: Block entropy
-%                    - Hk_per_sym: Entropy per symbol
-%                    - Gain_vs_fixed_emp: Gain in bits per symbol compared to fixed-length (empirical)
-%                    - Gain_vs_fixed_actual: Gain in bits per symbol compared to fixed-length (actual)
-%
-% Example Usage:
-%   results = block_source_coding(seq, A, [2 3 4], true);
-%
-% Notes:
-%   - The function uses a helper function 'baseline_huffman_V2' for Huffman coding.
-%   - The function verifies lossless reconstruction if the verify_lossless flag is set to true.
-%   - The output table can be used for further analysis of the coding efficiency.
+
+% ================= helpers =================
+function val = fetchfield_safe(S, names, defaultVal)
+val = defaultVal;
+for k = 1:numel(names)
+  f = names(k);
+  if isfield(S, f)
+    val = S.(f);
+    return
+  end
+end
+end
+
+function [decoded_blks, decoded_seq] = local_get_decoded_from_baseline(Rblk, K)
+decoded_blks = {};
+decoded_seq  = '';
+
+blk_candidates = ["decoded_blocks","decoded_syms","decoded_symbols","decoded","decoded_block_symbols"];
+seq_candidates = ["decoded_sequence","decoded_seq","decoded_chars","decoded_string","reconstructed_sequence"];
+
+for f = blk_candidates
+  if isfield(Rblk, f)
+    tmp = Rblk.(f);
+    if iscell(tmp), decoded_blks = tmp;
+    elseif isstring(tmp), decoded_blks = cellstr(tmp);
+    end
+    if ~isempty(decoded_blks), break; end
+  end
+end
+
+for f = seq_candidates
+  if isfield(Rblk, f)
+    tmp = Rblk.(f);
+    if isstring(tmp) || ischar(tmp), decoded_seq = char(tmp);
+    elseif isnumeric(tmp), decoded_seq = char(tmp);
+    end
+    if ~isempty(decoded_seq), break; end
+  end
+end
+
+if isempty(decoded_seq) && ~isempty(decoded_blks)
+  pieces = regexp(string(decoded_blks), "_", "split");
+  flat = [pieces{:}];
+  decoded_seq = char(join([flat{:}], ''));
+  decoded_seq = decoded_seq(:).';
+end
+end
