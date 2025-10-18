@@ -30,5 +30,10 @@ tgtMSE = 0.01;
 coding_analysis(xq_u);
 coding_analysis(xq_lm);
 % ----------------------------------
-block_coding_analysis(xq_u , length(unique(xq_u)), [1 2 3 4], true);
-block_coding_analysis(xq_lm , length(unique(xq_lm)), [1 2 3 4], true);
+% Uniform only
+A_u  = unique(xq_u(:)).';
+block_coding_analysis(xq_u, [], A_u, [1 2 3 4], true);
+
+% Lloyd–Max only
+A_lm = unique(xq_lm(:)).';
+block_coding_analysis(xq_lm, [], A_lm, [1 2 3 4], true);

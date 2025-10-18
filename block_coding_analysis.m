@@ -9,42 +9,69 @@
 % ----------------------------------------------------------------------
 function [cmp_tbl, results_uniform, results_lloydmax, decoded_uniform, decoded_lloydmax, is_lossless_uniform, is_lossless_lloydmax] = ...
     block_coding_analysis(seq_uniform, seq_lloydmax, A, K_values, verify_lossless)
-% BLOCK_CODING_ANALYSIS  Fully automated analysis, printing, and visualization
-%
-% RETURNS:
-%   cmp_tbl                -> comparison table Uniform vs Lloyd–Max across K
-%   results_uniform        -> struct returned by block_source_coding for Uniform
-%   results_lloydmax       -> struct returned by block_source_coding for Lloyd–Max
-%   decoded_uniform        -> decoded sequence (baseline Huffman) for Uniform
-%   decoded_lloydmax       -> decoded sequence (baseline Huffman) for Lloyd–Max
-%   is_lossless_uniform    -> isequal(decoded_uniform, seq_uniform) after normalization
-%   is_lossless_lloydmax   -> isequal(decoded_lloydmax, seq_lloydmax) after normalization
-%
-% NOTES:
-% - Decoded streams are extracted first from baseline_huffman_V2 outputs; if absent,
-%   we also try results_* structs from block_source_coding.
-% - Sequences are normalized before isequal to avoid false negatives (type/shape/format).
-% - Huffman trees are rendered even if 'graphStruct' is missing by building a trie
-%   from 'dict_table' (Symbol <-> Codeword).
+
 
 fprintf('========================================\n');
 fprintf('   3.2 Block Source Coding is Running...\n');
 fprintf('========================================\n');
 
+% --------- Input defaults ---------
 if nargin < 4 || isempty(K_values), K_values = [1 2 3 4]; end
 if nargin < 5, verify_lossless = true; end
-if isempty(seq_lloydmax)
-    seq_lloydmax = seq_uniform;
-    fprintf('Note: Lloyd–Max sequence not provided; using Uniform sequence for both.\n');
+if nargin < 2 || isempty(seq_lloydmax), seq_lloydmax = seq_uniform; end
+
+% ======= DEBUG/SAFETY GUARD: verify inputs are correct =======
+if islogical(K_values) || (isscalar(K_values) && (K_values==0 || K_values==1))
+    error(['block_coding_analysis: Bad K_values detected.\n' ...
+           'Call with FIVE args and pass alphabet VALUES.\n' ...
+           'Example:\nA_vals = unique(xq_u(:)).''; block_coding_analysis(xq_u, [], A_vals, [1 2 3 4], true);']);
 end
 
-% Keep originals; helpers will normalize when comparing/printing
+% Ensure A is VALUES. If empty or scalar, rebuild from sequences.
+if isempty(A) || isscalar(A)
+    if isempty(seq_lloydmax)
+        A = unique(seq_uniform(:)).';
+    else
+        A = unique([seq_uniform(:); seq_lloydmax(:)]).';
+    end
+end
+A = unique(A(:)).';
+
+% Normalize K_values shape
+K_values = K_values(:).';
+if isempty(K_values), K_values = [1 2 3 4]; end
+
+% Echo effective inputs
+fprintf('Effective inputs:\n');
+fprintf('  |A| (alphabet size): %d\n', numel(A));
+fprintf('  K_values: %s\n', mat2str(K_values));
+fprintf('  verify_lossless: %d\n', verify_lossless);
+fprintf('  N_uniform=%d, N_lloydmax=%d\n\n', numel(seq_uniform), numel(seq_lloydmax));
+
+% Keep originals for lossless checks
 seq_syms_u_raw  = seq_uniform(:);
 seq_syms_lm_raw = seq_lloydmax(:);
 
-% ===== Run block source coding on BOTH sequences =====
-results_uniform  = block_source_coding(seq_uniform,  A, K_values, verify_lossless);
-results_lloydmax = block_source_coding(seq_lloydmax, A, K_values, verify_lossless);
+% ===== Run block source coding on BOTH sequences (collect tables + artifacts) =====
+results_uniform_all  = cell(numel(K_values),1);
+results_lloydmax_all = cell(numel(K_values),1);
+artifacts_uniform_all  = cell(numel(K_values),1);
+artifacts_lloydmax_all = cell(numel(K_values),1);
+
+for i = 1:numel(K_values)
+    K = K_values(i);
+    fprintf('Running block_source_coding for K = %d ...\n', K);
+    [ru, au]  = block_source_coding(seq_uniform,  A, K, verify_lossless);
+    [rlm, alm] = block_source_coding(seq_lloydmax, A, K, verify_lossless);
+    results_uniform_all{i}   = ru;
+    results_lloydmax_all{i}  = rlm;
+    artifacts_uniform_all{i} = au;
+    artifacts_lloydmax_all{i}= alm;
+end
+
+% ===== Combine per-K TABLE rows into single tables =====
+results_uniform  = vertcat(results_uniform_all{:});
+results_lloydmax = vertcat(results_lloydmax_all{:});
 
 % ===== Latency metric =====
 results_uniform.Latency_symbols  = results_uniform.K;
@@ -67,24 +94,31 @@ end
 cmp_hdr = {'Quantizer','K','Total_bits','Bits_per_symbol','Latency_symbols'};
 cmp_tbl = cell2table(compare_table, 'VariableNames', cmp_hdr);
 
-% ===== Baseline Huffman stats (for K=1)  ==========
-R1_u  = baseline_huffman_V2(string(seq_syms_u_raw));
-R1_lm = baseline_huffman_V2(string(seq_syms_lm_raw));
+% ===== Losslessness =====
+decoded_uniform  = [];
+decoded_lloydmax = [];
+is_lossless_uniform  = false;
+is_lossless_lloydmax = false;
 
-decoded_uniform  = extract_decoded_any(R1_u);
-decoded_lloydmax = extract_decoded_any(R1_lm);
-if isempty(decoded_uniform),  decoded_uniform  = extract_decoded_any(results_uniform);  end
-if isempty(decoded_lloydmax), decoded_lloydmax = extract_decoded_any(results_lloydmax); end
+% find K=1 artifact if present
+idxK1_u  = find(results_uniform.K  == 1, 1, 'first');
+idxK1_lm = find(results_lloydmax.K == 1, 1, 'first');
 
-% ===== Normalize for comparison and printing =====
-orig_u_norm = normalize_seq_for_compare(seq_syms_u_raw);
-orig_lm_norm = normalize_seq_for_compare(seq_syms_lm_raw);
-dec_u_norm   = normalize_seq_for_compare(decoded_uniform);
-dec_lm_norm  = normalize_seq_for_compare(decoded_lloydmax);
+if ~isempty(idxK1_u) && ~isempty(artifacts_uniform_all{idxK1_u})
+    au = artifacts_uniform_all{idxK1_u};
+    if ~isempty(au) && isstruct(au) && ~isempty(au(1).decoded_seq)
+        decoded_uniform = au(1).decoded_seq(:);
+        is_lossless_uniform = equal_with_tol(decoded_uniform, seq_syms_u_raw(1:numel(decoded_uniform)));
+    end
+end
 
-% ===== isequal checks =====
-is_lossless_uniform  = ~isempty(dec_u_norm)  && isequal(dec_u_norm,  orig_u_norm);
-is_lossless_lloydmax = ~isempty(dec_lm_norm) && isequal(dec_lm_norm, orig_lm_norm);
+if ~isempty(idxK1_lm) && ~isempty(artifacts_lloydmax_all{idxK1_lm})
+    al = artifacts_lloydmax_all{idxK1_lm};
+    if ~isempty(al) && isstruct(al) && ~isempty(al(1).decoded_seq)
+        decoded_lloydmax = al(1).decoded_seq(:);
+        is_lossless_lloydmax = equal_with_tol(decoded_lloydmax, seq_syms_lm_raw(1:numel(decoded_lloydmax)));
+    end
+end
 
 % ===== Display Tables Automatically =====
 fprintf('\n==================== UNIFORM RESULTS ====================\n');
@@ -96,17 +130,12 @@ disp(cmp_tbl);
 
 % ===== Losslessness summary =====
 if verify_lossless
-    fprintf('\n==================== LOSSLESSNESS CHECKS (baseline Huffman) ====================\n');
+    fprintf('\n==================== LOSSLESSNESS CHECKS (from artifacts, K=1) ====================\n');
     fprintf('Uniform:   %s\n',   ternary(is_lossless_uniform,  'PASS (decoded == original)', ...
-                                                        ternary(isempty(dec_u_norm),'N/A (decoded not found)','FAIL (decoded ~= original)')));
+                                                        ternary(isempty(decoded_uniform),'N/A (decoded not found)','FAIL (decoded ~= original)')));
     fprintf('Lloyd–Max: %s\n',   ternary(is_lossless_lloydmax, 'PASS (decoded == original)', ...
-                                                        ternary(isempty(dec_lm_norm),'N/A (decoded not found)','FAIL (decoded ~= original)')));
+                                                        ternary(isempty(decoded_lloydmax),'N/A (decoded not found)','FAIL (decoded ~= original)')));
 end
-
-% ===== Show decoded messages==========
-fprintf('\n==================== DECODED MESSAGES (baseline) ====================\n');
-print_decoded_preview('Uniform (decoded)',   dec_u_norm);
-print_decoded_preview('Lloyd–Max (decoded)', dec_lm_norm);
 
 % ===== Plot 1: Bits per symbol vs K =====
 figure('Name','Bits per symbol vs K','Color','k');
@@ -116,16 +145,13 @@ plot(results_lloydmax.K, results_lloydmax.Bits_per_symbol, '--s','Color',[1 .3 .
 xlabel('Block size K','Color','w'); ylabel('bits / symbol','Color','w');
 title('Throughput (bits per symbol) vs K','Color','w','FontWeight','bold');
 legend('TextColor','w','Color',[.1 .1 .1],'Location','best');
-text(results_uniform.K(end), results_uniform.Bits_per_symbol(end), '  Uniform','Color','w','FontWeight','bold');
-text(results_lloydmax.K(end), results_lloydmax.Bits_per_symbol(end), '  Lloyd–Max','Color','w','FontWeight','bold');
 
 % ===== Plot 2: Dependency gains vs K (Uniform) =====
-H1_u        = R1_u.entropy_bits_per_symbol;
-L1_emp_u    = R1_u.huffman_avg_bits_per_symbol;
-Hk_per_sym  = results_uniform.Hk_per_sym;
-L_emp_per_sym = results_uniform.Huff_bits_per_sym_emp;
-dep_gain_emp  = L1_emp_u - L_emp_per_sym;
-dep_gain_th   = H1_u     - Hk_per_sym;
+% Pull directly from the table columns
+Hk_per_sym       = results_uniform.Hk_per_sym;
+L_emp_per_sym    = results_uniform.Huff_bits_per_sym_emp;
+dep_gain_emp     = L_emp_per_sym(1) - L_emp_per_sym;   % (ℓ̄1 - ℓ̄K)
+dep_gain_th      = Hk_per_sym(1)    - Hk_per_sym;      % (H1 - HK/K)
 
 figure('Name','Dependency Gains','Color','k');
 ax2 = axes; set(ax2,'Color','k','XColor','w','YColor','w'); hold on; grid on; ax2.GridColor=[.5 .5 .5];
@@ -142,65 +168,6 @@ for i = 1:numel(results_uniform.K)
         results_uniform.K(i), Hk_per_sym(i), L_emp_per_sym(i), ...
         dep_gain_emp(i), dep_gain_th(i));
 end
-fprintf('\n• Positive gains for K>1 indicate short-range dependencies.\n');
-fprintf('• L_emp close to H_K/K ⇒ near-optimal coding.\n');
-fprintf('• Gains plateau when p(a^K) becomes sparse or correlations vanish.\n');
-
-% ===================== HUFFMAN TREE VISUALIZATIONS =====================
-fprintf('\n==================== HUFFMAN TREE VISUALIZATIONS ====================\n');
-K_for_tree = 1;  % baseline (symbol-wise) trees
-
-% --- Uniform Huffman Tree ---
-if exist('R1_u','var') && isfield(R1_u,'dict_table') && ~isempty(R1_u.dict_table)
-    figU = figure('Name', sprintf('Huffman Tree — Uniform (K=%d, baseline)', K_for_tree), 'Color','k');
-    try
-        [G_u, node_labels_u] = ensure_huffman_graph(R1_u);
-        p_u = plot(G_u, 'Layout','layered', 'NodeColor','w', 'EdgeColor','w');
-        title(sprintf('Huffman Tree — Uniform | K = %d (baseline)', K_for_tree), ...
-              'Color','w', 'FontWeight','bold', 'FontSize',12);
-        xlabel('Bit Path →', 'Color','w', 'FontWeight','bold');
-        ylabel('Probability / Depth', 'Color','w', 'FontWeight','bold');
-        set(gca,'Color','k','XColor','w','YColor','w','FontWeight','bold','GridColor',[0.4 0.4 0.4]); grid on;
-        annotation(figU,'textbox',[0.02 0.92 0.96 0.06], ...
-            'String',sprintf('Quantizer: UNIFORM   |   K = %d (baseline Huffman)', K_for_tree), ...
-            'Color','w','EdgeColor','none','HorizontalAlignment','center','FontWeight','bold');
-        if ~isempty(node_labels_u)
-            labelnode(p_u, 1:numel(node_labels_u), node_labels_u);
-        end
-    catch ME
-        text(0.5,0.5,['Uniform Huffman tree not available (', ME.message, ')'], ...
-            'Color','w','HorizontalAlignment','center');
-    end
-else
-    figure('Name', sprintf('Huffman Tree — Uniform (K=%d, baseline)', K_for_tree), 'Color','k');
-    text(0.5,0.5,'Uniform Huffman tree not available','Color','w','HorizontalAlignment','center');
-end
-
-% --- Lloyd–Max Huffman Tree ---
-if exist('R1_lm','var') && isfield(R1_lm,'dict_table') && ~isempty(R1_lm.dict_table)
-    figL = figure('Name', sprintf('Huffman Tree — Lloyd–Max (K=%d, baseline)', K_for_tree), 'Color','k');
-    try
-        [G_lm, node_labels_lm] = ensure_huffman_graph(R1_lm);
-        p_lm = plot(G_lm, 'Layout','layered', 'NodeColor','w', 'EdgeColor','w');
-        title(sprintf('Huffman Tree — Lloyd–Max | K = %d (baseline)', K_for_tree), ...
-              'Color','w', 'FontWeight','bold', 'FontSize',12);
-        xlabel('Bit Path →', 'Color','w', 'FontWeight','bold');
-        ylabel('Probability / Depth', 'Color','w', 'FontWeight','bold');
-        set(gca,'Color','k','XColor','w','YColor','w','FontWeight','bold','GridColor',[0.4 0.4 0.4]); grid on;
-        annotation(figL,'textbox',[0.02 0.92 0.96 0.06], ...
-            'String',sprintf('Quantizer: LLOYD–MAX   |   K = %d (baseline Huffman)', K_for_tree), ...
-            'Color','w','EdgeColor','none','HorizontalAlignment','center','FontWeight','bold');
-        if ~isempty(node_labels_lm)
-            labelnode(p_lm, 1:numel(node_labels_lm), node_labels_lm);
-        end
-    catch ME
-        text(0.5,0.5,['Lloyd–Max Huffman tree not available (', ME.message, ')'], ...
-            'Color','w','HorizontalAlignment','center');
-    end
-else
-    figure('Name', sprintf('Huffman Tree — Lloyd–Max (K=%d, baseline)', K_for_tree), 'Color','k');
-    text(0.5,0.5,'Lloyd–Max Huffman tree not available','Color','w','HorizontalAlignment','center');
-end
 
 fprintf('\n=== All plots generated automatically. ===\n');
 fprintf('========================================\n');
@@ -213,139 +180,25 @@ function out = ternary(cond, a, b)
     if cond, out = a; else, out = b; end
 end
 
-function decoded = extract_decoded_any(S)
-% Decode the message to check losslessness
-decoded = [];
-if ~isstruct(S), return; end
-candidates = { ...
-    'decoded_message','decoded','decoded_seq','decoded_sequence', ...
-    'Decoded','Decoded_seq','Decoded_sequence', ...
-    'decoded_symbols','decodedSymbolSeq','reconstructed','recon_seq', ...
-    'baseline_decoded','BaselineDecoded','decoded_baseline','decodedK1', ...
-    'DecodedSymbols','SymbolsDecoded','decodedStream','decoded_stream'};
-for k = 1:numel(candidates)
-    f = candidates{k};
-    if isfield(S,f) && ~isempty(S.(f))
-        decoded = S.(f); return;
+function tf = equal_with_tol(x, y)
+    if isempty(x) || isempty(y) || numel(x) ~= numel(y), tf = false; return; end
+    try
+        xd = double(x(:)); yd = double(y(:));
+        tol = 1e-12 * max(1, max(abs([xd; yd])));
+        tf = all(abs(xd - yd) <= tol);
+    catch
+        
+        xs = normalize_seq_for_compare(x); ys = normalize_seq_for_compare(y);
+        tf = isequal(xs, ys);
     end
-end
-subs = {'baseline','outputs','huffman','decoder','decode','data','results'};
-for s = 1:numel(subs)
-    sub = subs{s};
-    if isfield(S, sub) && isstruct(S.(sub))
-        decoded = extract_decoded_any(S.(sub));
-        if ~isempty(decoded), return; end
-    end
-end
-if isfield(S,'decoded_cell') && ~isempty(S.decoded_cell)
-    try, decoded = S.decoded_cell{1}; return; end 
-end
 end
 
 function y = normalize_seq_for_compare(x)
-% Convert input to a COLUMN of STRINGS with stable formatting.
 if isempty(x), y = []; return; end
-if isnumeric(x)
-    y = string(compose('%g', double(x(:)))); return;
-end
-if iscategorical(x)
-    y = string(x(:)); y = strtrim(y); return;
-end
-if isstring(x)
-    y = strtrim(x(:)); return;
-end
-if ischar(x)
-    y = string(cellstr(x(:))); y = strtrim(y); return;
-end
-if iscellstr(x)
-    y = string(x(:)); y = strtrim(y); return;
-end
+if isnumeric(x), y = string(compose('%.15g', double(x(:)))); return; end
+if iscategorical(x), y = string(x(:)); y = strtrim(y); return; end
+if isstring(x), y = strtrim(x(:)); return; end
+if ischar(x), y = string(cellstr(x(:))); y = strtrim(y); return; end
+if iscellstr(x), y = string(x(:)); y = strtrim(y); return; end
 y = string(x(:)); y = strtrim(y);
-end
-
-function print_decoded_preview(label, seq_norm)
-% Pretty-print a decoded sequence.
-if isempty(seq_norm)
-    fprintf('%s: [not available]\n', label); return;
-end
-MAX_SHOW = 120;  
-tokens = join(seq_norm', " ");
-s = tokens{1};
-if strlength(s) <= MAX_SHOW
-    fprintf('%s: %s\n', label, s);
-else
-    head = extractBefore(s, MAX_SHOW-10);
-    tail = extractAfter(s, strlength(s)-30);
-    fprintf('%s: %s ... %s  [len=%d symbols]\n', label, head, tail, numel(seq_norm));
-end
-end
-
-function [G, node_labels] = ensure_huffman_graph(R)
-% Build/return a digraph for a Huffman code given baseline struct R.
-node_labels = [];
-
-if isfield(R,'graphStruct') && isstruct(R.graphStruct) && isfield(R.graphStruct,'Edges')
-    E = R.graphStruct.Edges;
-    if istable(E), src = E{:,1}; dst = E{:,2}; else, src = E(:,1); dst = E(:,2); end
-    G = digraph(src, dst);
-    if isfield(R,'probabilities') && ~isempty(R.probabilities)
-        node_labels = string(R.probabilities);
-    end
-    return;
-end
-% Build from dict_table
-if ~isfield(R,'dict_table') || isempty(R.dict_table)
-    error('No graphStruct or dict_table in baseline struct.');
-end
-T = R.dict_table;
-col_sym  = detect_col(T, {'symbol','symbols','sym','Symbol','Symbols','token','Token'});
-col_code = detect_col(T, {'code','Code','bits','Bits','codeword','Codeword'});
-if isempty(col_sym) || isempty(col_code)
-    error('dict_table does not contain recognizable Symbol/Code columns.');
-end
-symbols = string(T.(col_sym));
-codes   = T.(col_code); codes = string(codes);
-
-nextNode = 1; edges = [];
-node_map = containers.Map; node_map('') = 1;
-for i = 1:numel(symbols)
-    code = char(strrep(codes(i), " ", ""));
-    path = ''; parent = 1;
-    for b = 1:numel(code)
-        path_next = [path code(b)];
-        if ~isKey(node_map, path_next)
-            nextNode = nextNode + 1;
-            node_map(path_next) = nextNode;
-            edges(end+1,:) = [parent, nextNode]; 
-        end
-        parent = node_map(path_next);
-        path   = path_next;
-    end
-end
-if isempty(edges), error('Empty edge set when building Huffman trie.'); end
-G = digraph(edges(:,1), edges(:,2));
-
-% Label leaves with symbol text
-node_labels = strings(numnodes(G),1);
-keys = node_map.keys;
-for i = 1:numel(symbols)
-    code = char(strrep(codes(i), " ", ""));
-    if isKey(node_map, code)
-        leaf_id = node_map(code);
-        node_labels(leaf_id) = string(symbols(i));
-    end
-end
-end
-
-function col = detect_col(T, candidates)
-% Find first matching column name in table T from a list of candidates.
-col = '';
-tnames = string(T.Properties.VariableNames);
-for i = 1:numel(candidates)
-    m = tnames == string(candidates{i});
-    if any(m)
-        col = T.Properties.VariableNames{find(m,1,'first')};
-        return;
-    end
-end
 end

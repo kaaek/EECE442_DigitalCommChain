@@ -193,7 +193,7 @@ decoded_seq  = [];
 blk_candidates = ["decoded_blocks","decoded_syms","decoded_symbols","decoded","decoded_block_symbols"];
 seq_candidates = ["decoded_sequence","decoded_seq","decoded_chars","decoded_string","reconstructed_sequence"];
 
-
+% Try to get decoded block symbols directly
 for f = blk_candidates
   if isfield(Rblk, f)
     tmp = Rblk.(f);
@@ -208,7 +208,7 @@ for f = blk_candidates
   end
 end
 
-
+% If we didn't get block symbols, try any decoded sequence field
 raw_seq = '';
 for f = seq_candidates
   if isfield(Rblk, f)
@@ -222,7 +222,7 @@ for f = seq_candidates
   end
 end
 
-% If we have block symbols, reconstruct the numeric sequence
+% If we have block symbols, reconstruct the numeric sequence robustly
 if isempty(decoded_seq) && ~isempty(decoded_blks)
   pieces = regexp(string(decoded_blks), "_", "split");  % cell array per block
   tokens = [pieces{:}];                                 % flatten tokens across blocks
@@ -245,7 +245,7 @@ end
 end
 
 function tf = equal_with_tol(x, y)
-
+% Robust equality for numeric sequences (column or row)
     if isempty(x) || isempty(y) || numel(x) ~= numel(y), tf = false; return; end
     xd = double(x(:)); yd = double(y(:));
     tol = 1e-12 * max(1, max(abs([xd; yd])));
