@@ -28,21 +28,6 @@ function xq = quan(x, thr, lvl)
     %   If it is greater than the last threshold, it is assigned the last level. 
     %   Values between thresholds are assigned the corresponding levels.
     xq = zeros(size(x));
-    % for i = 1:length(x)
-    %     x_i = x(i);
-    %     if x_i <= thr(1)
-    %         xq(i) = lvl(1);
-    %     elseif x_i > thr(end)
-    %         xq(i) = lvl(end);
-    %     else
-    %         for j = 1:length(thr)-1
-    %             if x_i > thr(j) && x_i <= thr(j+1)
-    %                 xq(i) = lvl(j+1);
-    %                 break;
-    %             end
-    %         end
-    %     end
-    % end
     for i = 1:length(x)
         x_i = x(i);
         assigned = false;

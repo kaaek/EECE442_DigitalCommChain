@@ -15,13 +15,4 @@ function xq = twoLvlQuan(t, xt)
     thr = [t_1];
     lvl = [l_1, l_2];
     xq = quan(xt, thr, lvl);
-    
-    % figure('Name','Two-Level Quantizer');
-    % plot(t, xt, 'r--', 'DisplayName', 'x[n]');
-    % hold on;
-    % stem(t, xq, 'b-', 'LineStyle', 'none', 'DisplayName', 'x_q[n]');
-    % xlabel('Time (s)');
-    % ylabel('Amplitude (V)');
-    % legend show;
-    % grid on;
 end

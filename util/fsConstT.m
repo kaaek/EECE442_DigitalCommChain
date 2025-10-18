@@ -8,32 +8,13 @@
 % ----------------------------------------------------------------------
 
 function fsConstT(t, xt, f_max, n_values, T)
-    % % ---------------------- Init ----------------------
-    % duration = 2;
-    % [t, xt, f_c, f_max] = exampleSpeechWave(duration);          % x(t): speech wave
-    % T = duration;                                               % T = duration of speech signal to reconstruct the entire clip.
-    E = zeros(1,length(n_values));                              % Init energy array
-    % % ------------------ Optimal Case ------------------
-    % n_optimal = ceil(f_max * T);                                % Enough harmonics to capture the entire message's frequency content.
-    % xhat1 = fs(xt, t, n_optimal, T);
-    % figure;
-    % plot(t, xt, 'r--', 'DisplayName', 'x(t)');
-    % hold on;
-    % plot(t, xhat1, 'b-', 'DisplayName', 'x^(t)');
-    % title(sprintf('[Example] Control Case for n = n_{optimal} = %.1f | T = %.1f', n_optimal, T));
-    % xlabel('Time (s)');
-    % ylabel('Amplitude (V)');
-    % legend show;
-    % grid on;
-    % % --------------------------------------------------
+    E = zeros(1,length(n_values));
     figure('Name','Fourier Approximation (Fixed Period T)');
     for i = 1:length(n_values)
         n_i = n_values(i);
         xhat_i = fs(xt, t, n_i, T);
-
-        E_i = errEn(t, xt, xhat_i);                             % Needed for the energy plot later.
+        E_i = errEn(t, xt, xhat_i); % Needed for the energy plot later.
         E(i) = E_i;
-        
         subplot(length(n_values), 1, i);
         plot(t, xt, 'r--', 'DisplayName', 'x(t)', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
         hold on;
@@ -55,7 +36,7 @@ function plotErrEnConstT(t, xt, f_max, T)
     for i = 1:length(n_values)
         n_i = n_values(i);
         xhat_i = fs(xt, t, n_i, T);
-        E_i = errEn(t, xt, xhat_i);                             % Needed for the energy plot later.
+        E_i = errEn(t, xt, xhat_i); % Needed for the energy plot later.
         E(i) = E_i;
     end
 

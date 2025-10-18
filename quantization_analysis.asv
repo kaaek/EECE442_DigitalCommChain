@@ -479,15 +479,23 @@ subplot(3, 1, 3);
 plotXq(t_sample2, x_sample2, xq_2);
 title('Lloyd-Max Quantized Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
 
+subplot(3, 1, 1);
 plotPdf(x_sample_nyquist, thr_n, lvl_n, M3);
+title('Lloyd-Max Quantized Nyquist-Sampled Signal');
+
+subplot(3, 1, 2);
 plotPdf(x_sample1, thr_1, lvl_1, M3);
+title('Lloyd-Max Quantized Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
+
+subplot(3, 1, 3);
 plotPdf(x_sample2, thr_2, lvl_2, M3);
+title('Lloyd-Max Quantized Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
 
 x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2  = reconstruct(t, x_sample2, f_s2);
 
-figure('Name', sprintf('Lloyd-Max Quantizer M = %d Reconstructed Signals', M3));
+figure('Name', sprintf('Uniform Quantizer M = %d Reconstructed Signals', M3));
 
 subplot(3, 1, 1);
 plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);

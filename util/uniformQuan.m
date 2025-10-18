@@ -28,9 +28,6 @@ function [xq, MSE] = uniformQuan(M, t, xt, print)
     %   and the Mean Squared Error (MSE) between the original and quantized
     %   signals. The function also generates plots to visualize the original
     %   and quantized signals, as well as the MSE against the quantization levels.
-    % MSE = zeros(1, length(M));
-    % figure('Name','Uniform Quantizer');
-    % for i = 1:length(M) % Plot the quantized signal
     lvl = linspace(min(xt), max(xt), M);
     thr = (lvl(1:end-1) + lvl(2:end)) / 2;
     xq = quan(xt, thr, lvl);
@@ -39,11 +36,13 @@ function [xq, MSE] = uniformQuan(M, t, xt, print)
     % Print the quantization levels and thresholds
     
     if print
-        fprintf('### Number of Quantization Levels: %s ###\n', num2str(M));
-        fprintf('Quantization Levels:\n');
+        fprintf('-----------------------------------------------------------------');
+        fprintf('\nUNIFORM QUANTIZER (Number of Quantization Levels M = %s)', num2str(M));
+        fprintf('\nQUANTIZATION LEVELS:\n');
         fprintf('%.4f ', lvl);
-        fprintf('\nThresholds:\n');
+        fprintf('\nTHRESHOLDS:\n');
         fprintf('%.4f ', thr);
+        fprintf('\nMEAN SQUARED ERROR (MSE): %.4e\n', MSE);
         fprintf('\n\n\n');
     end
 end

@@ -12,5 +12,4 @@ function MSE = MSE (t, xt, xhat)
     % Usage:
     %   mseValue = MSE(t, xt, xhat);
     MSE = errEn(t, xt, xhat)/length(t);
-
 end
