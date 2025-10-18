@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% authors: Khalil El Kaaki, Mouhammad Kandakji
-%
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% * Dark-mode edits by ChatGPT
-% ----------------------------------------------------------------------
 function [cmp_tbl, results_uniform, results_lloydmax, decoded_uniform, decoded_lloydmax, is_lossless_uniform, is_lossless_lloydmax] = ...
     block_coding_analysis(seq_uniform, seq_lloydmax, A, K_values, verify_lossless)
 % BLOCK_CODING_ANALYSIS  Fully automated analysis, printing, and visualization
@@ -61,13 +52,13 @@ for t = 1:numel(Ks_common)
     total_bits_lm = results_lloydmax.Total_bits(il(t));
     bps_lm        = results_lloydmax.Bits_per_symbol(il(t));
     latency_lm    = results_lloydmax.Latency_symbols(il(t));
-    compare_table(end+1,:) = {"Uniform",   K, total_bits_u,  bps_u,  latency_u}; 
-    compare_table(end+1,:) = {"Lloyd–Max", K, total_bits_lm, bps_lm, latency_lm}; 
+    compare_table(end+1,:) = {"Uniform",   K, total_bits_u,  bps_u,  latency_u}; %#ok<AGROW>
+    compare_table(end+1,:) = {"Lloyd–Max", K, total_bits_lm, bps_lm, latency_lm}; %#ok<AGROW>
 end
 cmp_hdr = {'Quantizer','K','Total_bits','Bits_per_symbol','Latency_symbols'};
 cmp_tbl = cell2table(compare_table, 'VariableNames', cmp_hdr);
 
-% ===== Baseline Huffman stats (for K=1)  ==========
+% ===== Baseline Huffman stats (for K=1) + try to get decoded streams =====
 R1_u  = baseline_huffman_V2(string(seq_syms_u_raw));
 R1_lm = baseline_huffman_V2(string(seq_syms_lm_raw));
 
@@ -103,7 +94,7 @@ if verify_lossless
                                                         ternary(isempty(dec_lm_norm),'N/A (decoded not found)','FAIL (decoded ~= original)')));
 end
 
-% ===== Show decoded messages==========
+% ===== Show decoded messages (pretty) =====
 fprintf('\n==================== DECODED MESSAGES (baseline) ====================\n');
 print_decoded_preview('Uniform (decoded)',   dec_u_norm);
 print_decoded_preview('Lloyd–Max (decoded)', dec_lm_norm);
@@ -264,7 +255,7 @@ y = string(x(:)); y = strtrim(y);
 end
 
 function print_decoded_preview(label, seq_norm)
-% Pretty-print a decoded sequence.
+% Pretty-print a decoded sequence (already normalized to string column).
 if isempty(seq_norm)
     fprintf('%s: [not available]\n', label); return;
 end
@@ -283,7 +274,7 @@ end
 function [G, node_labels] = ensure_huffman_graph(R)
 % Build/return a digraph for a Huffman code given baseline struct R.
 node_labels = [];
-
+% 1) Use existing graphStruct if available
 if isfield(R,'graphStruct') && isstruct(R.graphStruct) && isfield(R.graphStruct,'Edges')
     E = R.graphStruct.Edges;
     if istable(E), src = E{:,1}; dst = E{:,2}; else, src = E(:,1); dst = E(:,2); end
@@ -293,7 +284,7 @@ if isfield(R,'graphStruct') && isstruct(R.graphStruct) && isfield(R.graphStruct,
     end
     return;
 end
-% Build from dict_table
+% 2) Build from dict_table
 if ~isfield(R,'dict_table') || isempty(R.dict_table)
     error('No graphStruct or dict_table in baseline struct.');
 end

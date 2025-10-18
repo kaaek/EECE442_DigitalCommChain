@@ -12,14 +12,13 @@ N   = numel(seq);
 fprintf('--- BLOCK SOURCE CODING with Decode + Bit Throughput ---\n');
 fprintf('Alphabet size |A| = %d, N = %d\n\n', M, N);
 
-% We'll build the table dynamically (append rows), safer with skips.
+% Build table
 results = table('Size',[0 12], ...
   'VariableTypes', repmat("double",1,12), ...
   'VariableNames', ["K","NumBlocks","Acard","Fixed_bits_per_sym","Huff_bits_per_sym_emp", ...
     "Huff_bits_per_sym_actual","Hk","Hk_per_sym","Gain_vs_fixed_emp","Gain_vs_fixed_actual", ...
     "Total_bits","Bits_per_symbol"]);
 
-% Predeclare artifacts schema (single empty element), then clear to 0x1
 artifacts = struct( ...
   'K', [], 'numBlocks', [], 'uniqBlkSyms', {{}}, 'p', [], ...
   'trimmed', [], 'blocksMat', [], 'blkSyms', {{}}, ...
@@ -29,7 +28,7 @@ artifacts = struct( ...
   'fixed_bits_per_block', [], 'fixed_bits_per_symbol', [], ...
   'L_emp_block', [], 'L_emp_sym', [], 'total_bits_actual', [], 'L_actual_sym', [], ...
   'Hk', [], 'Hk_per_sym', [] );
-artifacts(1) = [];  % make it 0x1 with the schema fixed
+artifacts(1) = [];  
 
 for K = K_values
   % ---------- (e) form non-overlapping K-blocks ----------
@@ -59,7 +58,7 @@ for K = K_values
   total_bits_actual = double(fetchfield_safe(Rblk, ["total_bits_huffman","total_bits","bitcount","n_bits"], NaN));
   L_actual_sym = (total_bits_actual / numBlocks) / K;
 
-  % ---------- Bit count + throughput extraction (robust) ----------
+  % ---------- Bit count + throughput extraction  ----------
   encoded_stream = fetchfield_safe(Rblk, ["encoded_stream","bitstream","encoded_bits","code"], []);
   if iscell(encoded_stream), encoded_stream = [encoded_stream{:}]; end
   if isstring(encoded_stream), encoded_stream = char(encoded_stream); end
@@ -128,7 +127,7 @@ for K = K_values
     'L_actual_sym', L_actual_sym, ...
     'Hk', Hk, ...
     'Hk_per_sym', Hk_per_sym );
-  artifacts(end+1) = S;   %#ok<AGROW>  % same fields as predeclared schema
+  artifacts(end+1) = S;     
 end
 
 fprintf('--- Done ---\n');

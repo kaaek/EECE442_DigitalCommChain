@@ -1,5 +1,9 @@
 function R = baseline_huffman_V2(x, opts)
 % BASELINE_HUFFMAN  Baseline Huffman Coding (symbol-wise) + Tree Plot
+% x    : vector of discrete symbols (numeric, char, or strings)
+% opts : (optional) struct with fields:
+%        - A_design : vector/string/cell (designed alphabet)
+%        - notes    : arbitrary struct to store metadata in result R
 
 % ---------- normalize ----------
 if isnumeric(x)
@@ -15,12 +19,11 @@ elseif isstring(x)
 else
     error('x must be numeric, char, or string.');
 end
-if nargin < 2 || ~isstruct(opts), opts = struct(); end
 N = numel(x);
 
 % ---------- observed & designed alphabets ----------
 A_observed = unique(x,'stable');
-if isfield(opts,'A_design') && ~isempty(opts.A_design)
+if nargin >= 2 && isfield(opts,'A_design') && ~isempty(opts.A_design)
     A_design = string(opts.A_design(:));
 else
     A_design = A_observed;
@@ -35,17 +38,13 @@ bits_fixed = N * L_fixed_per_sym;
 [~,~,idx] = unique(x,'stable');
 cnt = accumarray(idx,1,[numel(A_observed),1]);
 p   = cnt / N;
-pp  = p(p > 0);
-H   = -sum(pp .* log2(pp));
+H   = -sum(p .* log2(p + (p==0)));
 
 % ---------- build Huffman dict ----------
 [dict, root] = build_huffman_dict(A_observed, p);
 
-% avg length 
-sym2p = containers.Map('KeyType','char','ValueType','double');
-for k = 1:numel(A_observed)
-    sym2p(char(A_observed(k))) = double(p(k));
-end
+% avg length
+sym2p = containers.Map(cellstr(A_observed), num2cell(double(p)));
 
 L_avg = 0; codeLen = zeros(size(dict,1),1); p_aligned = zeros(size(dict,1),1);
 for i = 1:size(dict,1)
@@ -57,12 +56,7 @@ end
 % ---------- encode/decode/verify ----------
 keys   = cellfun(@char, dict(:,1), 'UniformOutput', false);
 values = cellfun(@char, dict(:,2), 'UniformOutput', false);
-
-codeMap = containers.Map('KeyType','char','ValueType','char');
-for k = 1:numel(keys)
-    codeMap(keys{k}) = values{k};
-end
-
+codeMap = containers.Map(keys, values);
 encoded = encode_stream(x, codeMap);
 decoded = decode_stream(encoded, dict);
 ok = all(x == string(decoded));
@@ -89,7 +83,17 @@ R.dict = dict;
 R.dict_table = table(A_observed(:), p_aligned(:), string(dict(:,2)), double(codeLen(:)), ...
     'VariableNames', {'Symbol','Probability','Code','Len'});
 R.tree_root = root;
-if isfield(opts,'notes'); R.notes = opts.notes; end
+if nargin >= 2 && isfield(opts,'notes'); R.notes = opts.notes; end
+
+% ---------- print report ----------
+fprintf('\n--- Baseline Huffman Report ---\n');
+fprintf('N=%d, |A_obs|=%d, |A_design|=%d\n', N, numel(A_observed), numel(A_design));
+fprintf('Entropy H(A)          = %.4f bits/sym\n', H);
+fprintf('Fixed length          = %d bits/sym (total %d)\n', R.fixed_bits_per_symbol, bits_fixed);
+fprintf('Huffman avg length    = %.4f bits/sym (total %d)\n', L_avg, R.total_bits_huffman);
+fprintf('Bits per symbol       = %.4f\n', R.bits_per_symbol);
+fprintf('Compression vs fixed  = %.2f%%\n', 100*R.compression_gain_vs_fixed);
+fprintf('Lossless verified     = %d\n', ok);
 
 % ---------- dark-mode tree ----------
 figure('Name','Huffman Tree','Color','k');
@@ -160,7 +164,7 @@ out = strings(0,1); cur = 1;
 for k = 1:numel(bits)
     cur = T(cur).next(bits(k));
     if T(cur).sym ~= ""
-        out(end+1,1) = T(cur).sym; 
+        out(end+1,1) = T(cur).sym; %#ok<AGROW>
         cur = 1;
     end
 end
@@ -169,31 +173,45 @@ end
 
 function plot_huffman_tree(root, darkMode)
 if nargin < 2, darkMode = false; end
-nodes = struct('sym',{},'p',{},'left',{},'right',{}); edges = [];
+
+% Build flat node list (children as indices)
+nodes = struct('sym',{},'p',{},'left',{},'right',{});
+edges = [];
+
     function id = addNode(n)
         id = numel(nodes) + 1;
-        nodes(id).sym   = n.sym; nodes(id).p = n.p;
-        nodes(id).left  = []; nodes(id).right = [];
+        nodes(id).sym   = n.sym;
+        nodes(id).p     = n.p;
+        nodes(id).left  = [];
+        nodes(id).right = [];
         if ~isempty(n.left)
-            L = addNode(n.left); nodes(id).left = L; edges(end+1,:) = [id, L, 0]; 
+            L = addNode(n.left);
+            nodes(id).left = L;
+            edges(end+1,:) = [id, L, 0]; %#ok<AGROW>
         end
         if ~isempty(n.right)
-            R = addNode(n.right); nodes(id).right = R; edges(end+1,:) = [id, R, 1]; 
+            R = addNode(n.right);
+            nodes(id).right = R;
+            edges(end+1,:) = [id, R, 1]; %#ok<AGROW>
         end
     end
 addNode(root);
 
-n = numel(nodes); pos = zeros(n,2); leafX = 0;
+% Assign node positions
+n = numel(nodes);
+pos = zeros(n,2);
+leafX = 0;
     function assignPos(id, depth)
         isLeaf = isempty(nodes(id).left) && isempty(nodes(id).right);
         if isLeaf
-            leafX = leafX + 1; pos(id,:) = [leafX, depth];
+            leafX = leafX + 1;
+            pos(id,:) = [leafX, depth];
         else
             if ~isempty(nodes(id).left),  assignPos(nodes(id).left,  depth+1); end
             if ~isempty(nodes(id).right), assignPos(nodes(id).right, depth+1); end
             xs = [];
-            if ~isempty(nodes(id).left),  xs(end+1) = pos(nodes(id).left,1);  end 
-            if ~isempty(nodes(id).right), xs(end+1) = pos(nodes(id).right,1); end 
+            if ~isempty(nodes(id).left),  xs(end+1) = pos(nodes(id).left,1);  end %#ok<AGROW>
+            if ~isempty(nodes(id).right), xs(end+1) = pos(nodes(id).right,1); end %#ok<AGROW>
             pos(id,:) = [mean(xs), depth];
         end
     end
@@ -203,9 +221,11 @@ set(gca,'YDir','reverse','Color', (darkMode)*[0 0 0] + (~darkMode)*[1 1 1]);
 axis off; hold on;
 
 if darkMode
-    edgeC = [1 1 1]; txtC = [1 1 1]; faceC = [0.2 0.2 0.2]; edgeNode = [1 1 1];
+    edgeC = [1 1 1]; txtC = [1 1 1];
+    faceC = [0.2 0.2 0.2]; edgeNode = [1 1 1];
 else
-    edgeC = [0.5 0.5 0.5]; txtC = [0 0 0]; faceC = [0.92 0.92 0.92]; edgeNode = [0 0 0];
+    edgeC = [0.5 0.5 0.5]; txtC = [0 0 0];
+    faceC = [0.92 0.92 0.92]; edgeNode = [0 0 0];
 end
 
 for k = 1:size(edges,1)
