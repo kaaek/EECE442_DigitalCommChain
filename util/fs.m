@@ -1,5 +1,5 @@
 % ----------------------------------------------------------------------
-% authors: Khalil El Kaaki, Mouhammad Kandakji
+% author: Khalil El Kaaki
 % 
 % Note on the use of AI:
 % * Copilot wrote the help sections for our functions
@@ -41,23 +41,5 @@ function xhat = fs(xt, t, n, T)
         xhat = xhat + ck(idx) * exp(1i*2*pi*k(idx)*t/T);
     end
 
-    xhat = real(xhat); 
-    % xhat = xhat - mean(imag(xhat)); % In the case there are asymmetrical imaginary components
-
-    % plotFs(t, xt, xhat);
-
-
-end
-
-function plotFs(t, xt, xhat)
-    figure;
-    plot(t, xt, 'r--', 'LineWidth', 1.5);
-    hold on;
-    plot(t, real(xhat), 'b-', 'LineWidth', 1.5);
-    hold off;
-    legend('x(t)', 'x^(t)');
-    xlabel('Time (s)');
-    ylabel('Amplitude (V)');
-    title('[TX] Fourier Series: x(t) & x^(t) VS Time (s)');
-    grid on;
+    xhat = real(xhat); % So that we can analyze practically.
 end

@@ -103,9 +103,9 @@ M1 = 4;
 M2 = 16;
 M3 = 32;
 
-[xqn, MSEn] = uniformQuan(M1, t_sample_nqyuist, x_sample_nyquist, true);
-[xq1, MSE1] = uniformQuan(M1, t_sample1, x_sample1, true);
-[xq2, MSE2] = uniformQuan(M1, t_sample2, x_sample2, true);
+[thr, lvl, xqn, MSEn] = uniformQuan(M1, t_sample_nqyuist, x_sample_nyquist, true);
+[thr, lvl, xq1, MSE1] = uniformQuan(M1, t_sample1, x_sample1, true);
+[thr, lvl, xq2, MSE2] = uniformQuan(M1, t_sample2, x_sample2, true);
 
 figure('Name', sprintf('Uniform Quantization M = %d', M1));
 
@@ -177,9 +177,9 @@ grid on;
 
 % ----------------------------------------------------------------------
 
-[xqn, MSEn] = uniformQuan(M2, t_sample_nqyuist, x_sample_nyquist, true);
-[xq1, MSE1] = uniformQuan(M2, t_sample1, x_sample1, true);
-[xq2, MSE2] = uniformQuan(M2, t_sample2, x_sample2, true);
+[thr, lvl, xqn, MSEn] = uniformQuan(M2, t_sample_nqyuist, x_sample_nyquist, true);
+[thr, lvl, xq1, MSE1] = uniformQuan(M2, t_sample1, x_sample1, true);
+[thr, lvl, xq2, MSE2] = uniformQuan(M2, t_sample2, x_sample2, true);
 
 figure('Name', sprintf('Uniform Quantization M = %d', M2));
 
@@ -251,9 +251,9 @@ grid on;
 
 % -------------------------------------------------------------------------
 
-[xqn, MSEn] = uniformQuan(M3, t_sample_nqyuist, x_sample_nyquist, true);
-[xq1, MSE1] = uniformQuan(M3, t_sample1, x_sample1, true);
-[xq2, MSE2] = uniformQuan(M3, t_sample2, x_sample2, true);
+[thr, lvl, xqn, MSEn] = uniformQuan(M3, t_sample_nqyuist, x_sample_nyquist, true);
+[thr, lvl, xq1, MSE1] = uniformQuan(M3, t_sample1, x_sample1, true);
+[thr, lvl, xq2, MSE2] = uniformQuan(M3, t_sample2, x_sample2, true);
 
 figure('Name', sprintf('Uniform Quantization M = %d', M3));
 
@@ -332,7 +332,7 @@ M = 1:1:256;
 MSE = zeros(1, length(M));
 for i = 1:length(M)
     % Perform uniform quantization for each M value
-    [xqn, MSEn(i)] = uniformQuan(M(i), t_sample_nqyuist, x_sample_nyquist, false);
+    [thr, lvl, xqn, MSEn(i)] = uniformQuan(M(i), t_sample_nqyuist, x_sample_nyquist, false);
     MSE(i) = MSEn(i);
 end
 figure('Name', 'Uniform Quantizer: MSE vs M');

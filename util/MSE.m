@@ -1,3 +1,12 @@
+% ----------------------------------------------------------------------
+% authors: Khalil El Kaaki
+% 
+% Note on the use of AI:
+% * Copilot wrote the help sections for our functions
+%       (the big comment blocks following function declarations)
+% * ChatGPT only corrected minor logical and syntax errors.
+% ----------------------------------------------------------------------
+
 function MSE = MSE (t, xt, xhat)
     % MSE calculates the Mean Squared Error between the true signal and the estimated signal.
     % 

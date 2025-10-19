@@ -1,5 +1,5 @@
 % ----------------------------------------------------------------------
-% authors: Khalil El Kaaki, Mouhammad Kandakji
+% author: Khalil El Kaaki
 % 
 % Note on the use of AI:
 % * Copilot wrote the help sections for our functions
@@ -8,7 +8,8 @@
 % ----------------------------------------------------------------------
 
 function xrcon = reconstruct(t_target, x_sample, fs)
-    % RECONSTRUCT reconstructs a continuous signal from its sampled values.
+    % RECONSTRUCT reconstructs a continuous signal from its sampled values
+    % using sinc interpolation.
     %
     %   XRCON = RECONSTRUCT(T_TARGET, X_SAMPLE, FS) takes a target time vector
     %   T_TARGET, a vector of sampled signal values X_SAMPLE, and the sampling
@@ -26,6 +27,6 @@ function xrcon = reconstruct(t_target, x_sample, fs)
     t_sample = (0:length(x_sample)-1)/fs;
     xrcon = zeros(size(t_target));
     for k = 1:length(x_sample)
-        xrcon = xrcon + x_sample(k) * sinc(fs*(t_target - t_sample(k)));
+        xrcon = xrcon + x_sample(k) * sinc(fs*(t_target - t_sample(k))); % Add the contribution of the k-th sample to the reconstructed signal (with sinc interpolation)
     end
 end

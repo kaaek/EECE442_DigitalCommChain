@@ -1,3 +1,12 @@
+% ----------------------------------------------------------------------
+% author: Mouhamad Kandakji
+% 
+% Note on the use of AI:
+% * Copilot wrote the help sections for our functions
+%       (the big comment blocks following function declarations)
+% * ChatGPT only corrected minor logical and syntax errors.
+% ----------------------------------------------------------------------
+
 function S = decode_stream(bits, dict)
 trie = struct('next', containers.Map({'0','1'},{[],[]}), 'sym', "");
 triePool = trie; % root

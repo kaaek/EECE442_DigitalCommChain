@@ -1,5 +1,5 @@
 % ----------------------------------------------------------------------
-% authors: Khalil El Kaaki, Mouhammad Kandakji
+% author: Mouhammad Kandakji
 %
 % Note on the use of AI:
 % * Copilot wrote the help sections for our functions

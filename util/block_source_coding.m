@@ -1,3 +1,12 @@
+% ----------------------------------------------------------------------
+% author: Mouhamad Kandakji
+% 
+% Note on the use of AI:
+% * Copilot wrote the help sections for our functions
+%       (the big comment blocks following function declarations)
+% * ChatGPT only corrected minor logical and syntax errors.
+% ----------------------------------------------------------------------
+
 function [results, artifacts] = block_source_coding(seq, A, K_values, verify_lossless)
 % BLOCK_SOURCE_CODING with built-in decode display + bit throughput, robust artifacts
 
