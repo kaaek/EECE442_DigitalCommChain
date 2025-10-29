@@ -28,5 +28,6 @@ function cj = fcoef(t, xt, T, j) % Helper function that calculates the jth fouri
     %       j = 1;
     %       cj = fcoef(t, xt, T, j);
     %       disp(cj);
-    cj = (1/T) * trapz(t, xt .* exp(-1i*2*pi*j*t/T));
+    integrand = xt.*exp(-1i*2*pi*j*t/T);
+    cj = integrate(t, integrand);
 end

@@ -7,7 +7,7 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function MSE = MSE (t, xt, xhat)
+function MSE = MSE (xt, xhat, t)
     % MSE calculates the Mean Squared Error between the true signal and the estimated signal.
     % 
     % Inputs:
@@ -20,5 +20,5 @@ function MSE = MSE (t, xt, xhat)
     %
     % Usage:
     %   mseValue = MSE(t, xt, xhat);
-    MSE = errEn(t, xt, xhat)/length(t);
+    MSE = errEnergy(t, xt, xhat)/length(t);
 end

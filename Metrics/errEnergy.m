@@ -7,7 +7,7 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function E = errEn (t, xt, xhat)
+function E = errEnergy (xt, xhat, t)
     % ERREREN   Error Energy Calculation
     %   E = ERREREN(T, XT, XHAT) computes the error energy between the 
     %   original signal XT and the approximated signal XHAT over the time 
@@ -26,6 +26,7 @@ function E = errEn (t, xt, xhat)
     %       xt = cos(2*pi*10*t);
     %       xhat = xt + 0.1*randn(size(xt)); % Example of an approximated signal
     %       E = errEn(t, xt, xhat);
+    
     integrand = (xt - xhat).^2;
-    E = trapz(t, integrand);
+    E = integrate(t, integrand);
 end

@@ -7,7 +7,7 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function xhat = fs(xt, t, n, T)
+function xhat = fs(xt, t, N, T)
     % FS   Fourier Series approximation
     %   XHAT = FS(XT, T, N, T) computes the Fourier Series
     %   approximation of the signal XT defined on the time axis T using
@@ -30,16 +30,14 @@ function xhat = fs(xt, t, n, T)
     %       [xhat, ck] = fs(xt, t, n, T);
     %       plot(t, xt, 'r-', t, xhat, 'b--')
     %       legend('Original Signal', 'Fourier Series Approximation');
-    k = -n:n;
+    
+    % Initialize
+    k = -N:N; % Total number of coefficients to compute is 2*N + 1 (symmetry and zero)
     ck = zeros(1, length(k));
     xhat = zeros(size(t));
-
-    for idx = 1:length(k)   % Calculate coefficients c_k
-        ck(idx) = fcoef(t, xt, T, k(idx));
+    for i = 1:length(k)
+        ck(i) = fcoef(t, xt, T, k(i));                  % Calculate coefficients c_k
+        xhat = xhat + ck(i) * exp(1i*2*pi*k(i)*t/T);    % Reconstruct signal using c_k
     end
-    for idx = 1:length(k)   % Reconstruct signal using c_k
-        xhat = xhat + ck(idx) * exp(1i*2*pi*k(idx)*t/T);
-    end
-
-    xhat = real(xhat); % So that we can analyze practically.
+    xhat = real(xhat); % So that we can analyze practically & plot.
 end

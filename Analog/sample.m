@@ -4,10 +4,10 @@
 % Note on the use of AI:
 % * Copilot wrote the help sections for our functions
 %       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
+% * ChatGPT only corrected minor logical and syntax errors if exists.
 % ----------------------------------------------------------------------
 
-function [t_sample, x_sample] = sample(t, xt, fs)
+function [tSample, xSample] = sample(xt, t, F)
     %SAMPLE   Sample a signal at a given frequency
     %   [T_SAMPLE, X_SAMPLE] = SAMPLE(T, XT, FS) resamples the input signal
     %   XT defined on the time axis T at a sampling frequency FS.
@@ -28,7 +28,8 @@ function [t_sample, x_sample] = sample(t, xt, fs)
     %       xt = cos(2*pi*10*t);
     %       [ts, xs] = sample(t, xt, 20);
     %       plot(ts, xs, 'o')
-    Ts = 1/fs;
-    t_sample = t(1):Ts:t(end);
-    x_sample = interp1(t, xt, t_sample, 'spline'); % 'spline' option found by trial and error. Check interp1 documentation.
+    
+    T = 1/F;                                        % Define step size
+    tSample = t(1):T:t(end);                        % Traverse from the signal's support in step size T
+    xSample = interp1(t, xt, tSample, 'spline');    % 'spline' option found by trial and error. Check interp1 documentation.
 end
