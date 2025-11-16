@@ -7,12 +7,12 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function xq = twoLvlQuan(t, xt)
+function xq = twoLvlQuan(xt)
     t_1 = mean(xt);
     l_1 = (min(xt)+t_1)/2;
     l_2 = (max(xt)+t_1)/2;
     
     thr = [t_1];
     lvl = [l_1, l_2];
-    xq = quan(xt, thr, lvl);
+    xq = quantize(xt, thr, lvl);
 end

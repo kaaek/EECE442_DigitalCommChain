@@ -7,6 +7,6 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function MSE = MSE (xt, xhat, t)
-    MSE = errEnergy(t, xt, xhat)/length(t);
+function foo = MSE (xt, xhat, t)
+    foo = errorEnergy(t, xt, xhat)/length(t);
 end

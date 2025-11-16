@@ -13,7 +13,7 @@ function fsConstN(t, xt, f_max, N, T_values)
         T_i = T_values(i);
         xhat_i = fs(xt, t, N, T_i);
 
-        E_i = errEn(t, xt, xhat_i); % Needed for the energy plot later.
+        E_i = errorEnergy(t, xt, xhat_i); % Needed for the energy plot later.
         E(i) = E_i;
         
         subplot(length(T_values), 1, i);
@@ -37,7 +37,7 @@ function plotErrEnConstN(t, xt, f_max, N)
     for i = 1:length(T_values)
         T_i = T_values(i);
         xhat_i = fs(xt, t, N, T_i);
-        E_i = errEn(t, xt, xhat_i);                             % Needed for the energy plot later.
+        E_i = errorEnergy(t, xt, xhat_i);                             % Needed for the energy plot later.
         E(i) = E_i;
     end
 

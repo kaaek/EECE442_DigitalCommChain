@@ -39,7 +39,7 @@ function [thr, lvl, xq, MSE] = lloydMax(x_samples, M, tgtMSE)
         f_x = map(x_samples, thr, lvl);
         currMSE = calcMSE(x_samples, f_x);                  % Calculate the current MSE. Check if it falls below the target.
     end
-    xq = quan(x_samples, thr, lvl);
+    xq = quantize(x_samples, thr, lvl);
     MSE = mean((x_samples - xq).^2);
     fprintf('-----------------------------------------------------------------');
     fprintf('\nLLOYD-MAX QUANTIZER (Number of Quantization Levels M = %s)', num2str(M));

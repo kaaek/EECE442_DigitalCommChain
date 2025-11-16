@@ -8,12 +8,12 @@
 % ----------------------------------------------------------------------
 
 function fsConstT(t, xt, f_max, n_values, T)
-    E = zeros(1,length(n_values));
+    E = zeros(1,length(n_values)); % Initialize the error energy array to all zeroes
     figure('Name','Fourier Approximation (Fixed Period T)');
-    for i = 1:length(n_values)
+    for i = 1:length(n_values) % one test per n value.
         n_i = n_values(i);
         xhat_i = fs(xt, t, n_i, T);
-        E_i = errEn(t, xt, xhat_i); % Needed for the energy plot later.
+        E_i = errorEnergy(t, xt, xhat_i); % Needed for the energy plot later.
         E(i) = E_i;
         subplot(length(n_values), 1, i);
         plot(t, xt, 'r--', 'DisplayName', 'x(t)', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
@@ -26,17 +26,17 @@ function fsConstT(t, xt, f_max, n_values, T)
         grid on;
     end
 
-    plotErrEnConstT(t, xt, f_max, T);
+    nSweep(t, xt, f_max, T);
 
 end
 
-function plotErrEnConstT(t, xt, f_max, T)
+function nSweep(t, xt, f_max, T)
 
     n_values = 0:1:ceil(f_max*T);
     for i = 1:length(n_values)
         n_i = n_values(i);
         xhat_i = fs(xt, t, n_i, T);
-        E_i = errEn(t, xt, xhat_i); % Needed for the energy plot later.
+        E_i = errorEnergy(t, xt, xhat_i); % Needed for the energy plot later.
         E(i) = E_i;
     end
 

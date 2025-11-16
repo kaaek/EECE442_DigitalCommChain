@@ -26,32 +26,33 @@ fS2         = 2*fNyquist;     % valid case
 [tSample2, xSample2]                = sample(t, xt, fS2);
 
 % Plot the sampled signals
-figure('Name', 'Sampler');
-
-subplot(3, 1, 1);
+figure('Name', 'Sampling at f_{Nyquist}');
+% subplot(1, 1, 1);
 plot(t, xt, 'r--', 'DisplayName', 'x(t)', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]); hold on;
-stem(tSampleNqyuist, xSampleNyquist, 'b', 'DisplayName', 'x[n] sampled at f_{Nyquist}', 'Marker', 'o');
+stem(tSampleNqyuist, xSampleNyquist, 'b', 'DisplayName', 'x[n]', 'Marker', 'o');
 xlabel('Time (s)');
 ylabel('Amplitude (V)');
-title(sprintf('Comparison of x(t) and x[n] sampled at f_{Nyquist} (%.2f Hz)', fNyquist));
+title(sprintf('Plot of x(t) and x[n] sampled at f_{Nyquist}=(%.2f Hz)', fNyquist));
 legend show;
 grid on;
 
-subplot(3, 1, 2);
+figure('Name', 'Sampling at f_{s1}');
+% subplot(1, 1, 1);
 plot(t, xt, 'r--', 'DisplayName', 'x(t)', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]); hold on;
-stem(tSample1, xSample1, 'g', 'DisplayName', 'x[n] sampled at f_{s1}', 'Marker', 'x');
+stem(tSample1, xSample1, 'g', 'DisplayName', 'x[n]', 'Marker', 'x');
 xlabel('Time (s)');
 ylabel('Amplitude (V)');
-title(sprintf('Comparison of x(t) and x[n] sampled at f_{s1} (%.2f Hz)', fS1));
+title(sprintf('Comparison of x(t) and x[n] sampled at f_{s1}=(%.2f Hz)', fS1));
 legend show;
 grid on;
 
-subplot(3, 1, 3);
+figure('Name', 'Sampling at f_{s2}');
+% subplot(1, 1, 1);
 plot(t, xt, 'r--', 'DisplayName', 'x(t)', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]); hold on;
 stem(tSample2, xSample2, 'm', 'DisplayName', 'x[n] sampled at f_{s2}', 'Marker', 's');
 xlabel('Time (s)');
 ylabel('Amplitude (V)');
-title(sprintf('Comparison of x(t) and x[n] sampled at f_{s2} (%.2f Hz)', fS2));
+title(sprintf('Comparison of x(t) and x[n] sampled at f_{s2}=(%.2f Hz)', fS2));
 legend show;
 grid on;
 
@@ -61,9 +62,7 @@ xHat1         = reconstruct(t, xSample1, fS1);
 xHat2         = reconstruct(t, xSample2, fS2);
 
 % Plot the reconstructed signals
-figure('Name','Reconstruction From Samples');
-
-subplot(3, 1, 1);
+figure('Name','Reconstruction From Samples at f_{Nyquist}');
 plot(t, xt, 'r--', 'DisplayName', 'x(t)', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]); hold on;
 plot(t, xHatNyquist, 'b', 'DisplayName', 'Reconstructed x[n] at f_{Nyquist}', 'LineWidth', 1.5);
 xlabel('Time (s)');
@@ -72,7 +71,7 @@ title('Reconstruction of x[n] sampled at f_{Nyquist}');
 legend show;
 grid on;
 
-subplot(3, 1, 2);
+figure('Name','Reconstruction From Samples at f_{s1}');
 plot(t, xt, 'r--', 'DisplayName', 'x(t)', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]); hold on;
 plot(t, xHat1, 'g', 'DisplayName', 'Reconstructed x[n] at f_{s1}', 'LineWidth', 1.5);
 xlabel('Time (s)');
@@ -81,7 +80,7 @@ title('Reconstruction of x[n] sampled at f_{s1}');
 legend show;
 grid on;
 
-subplot(3, 1, 3);
+figure('Name','Reconstruction From Samples at f_{s2}');
 plot(t, xt, 'r--', 'DisplayName', 'x(t)', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]); hold on;
 plot(t, xHat2, 'm', 'DisplayName', 'Reconstructed x[n] at f_{s2}', 'LineWidth', 1.5);
 xlabel('Time (s)');

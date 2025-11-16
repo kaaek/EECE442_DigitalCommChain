@@ -7,27 +7,27 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function quantization_analysis(SIGNALDURATION, CARRIERFREQUENCY)
+function quantization_analysis(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY)
 
 fprintf('==========================================\n');
 fprintf('   2.1 Quantization Analysis running...\n');
 fprintf('==========================================\n');
 
-[t, xt, f_max] = exampleSpeechWave(SIGNALDURATION, CARRIERFREQUENCY);
-f_Nyquist = 2*f_max;
-f_s1 = 0.5*f_Nyquist;   % aliasing case
-f_s2 = 2*f_Nyquist;     % valid case
+[t, xt, f_max]  = AMWave(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY);
+f_Nyquist       = 2*f_max;
+f_s1            = 0.5*f_Nyquist;   % aliasing case
+f_s2            = 2*f_Nyquist;     % valid case
 
 % Sample to discrete x[n] (note that this is the analytical notation, but
 % numerically, n is so fine we can still consider it continuous)
 
-[t_sample_nqyuist, x_sample_nyquist] = sample(t, xt, f_Nyquist);
-[t_sample1, x_sample1] = sample(t, xt, f_s1);
-[t_sample2, x_sample2] = sample(t, xt, f_s2);
+[t_sample_nqyuist, x_sample_nyquist]    = sample(t, xt, f_Nyquist);
+[t_sample1, x_sample1]                  = sample(t, xt, f_s1);
+[t_sample2, x_sample2]                  = sample(t, xt, f_s2);
 
-xqn = twoLvlQuan(t_sample_nqyuist, x_sample_nyquist);
-xq1 = twoLvlQuan(t_sample1, x_sample1);
-xq2 = twoLvlQuan(t_sample2, x_sample2);
+xqn = twoLvlQuan(x_sample_nyquist);
+xq1 = twoLvlQuan(x_sample1);
+xq2 = twoLvlQuan(x_sample2);
 
 figure('Name','Two Level Quantizer');
 
@@ -90,7 +90,7 @@ grid on;
 subplot(3, 1, 3);
 plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.3]);
 hold on;
-plot(t, x_hat_2, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
+plot(t, x_hat_2, 'b-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
 xlabel('Time (s)');
 ylabel('Amplitude (V)');
 title('Reconstructed Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
@@ -103,9 +103,9 @@ M1 = 4;
 M2 = 16;
 M3 = 32;
 
-[thr, lvl, xqn, MSEn] = uniformQuan(M1, t_sample_nqyuist, x_sample_nyquist, true);
-[thr, lvl, xq1, MSE1] = uniformQuan(M1, t_sample1, x_sample1, true);
-[thr, lvl, xq2, MSE2] = uniformQuan(M1, t_sample2, x_sample2, true);
+[xqn, ~, ~, ~] = uniformQuan(t_sample_nqyuist, x_sample_nyquist, M1);
+[xq1, ~, ~, ~] = uniformQuan(t_sample1, x_sample1, M1);
+[xq2, ~, ~, ~] = uniformQuan(t_sample2, x_sample2, M1);
 
 figure('Name', sprintf('Uniform Quantization M = %d', M1));
 
@@ -139,7 +139,7 @@ title('Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz) - Uniform Quantiza
 legend show;
 grid on;
 
-x_hat_nqyuist = reconstruct(t, x_sample_nyquist, f_Nyquist);
+x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2 = reconstruct(t, x_sample2, f_s2);
 
@@ -177,9 +177,9 @@ grid on;
 
 % ----------------------------------------------------------------------
 
-[thr, lvl, xqn, MSEn] = uniformQuan(M2, t_sample_nqyuist, x_sample_nyquist, true);
-[thr, lvl, xq1, MSE1] = uniformQuan(M2, t_sample1, x_sample1, true);
-[thr, lvl, xq2, MSE2] = uniformQuan(M2, t_sample2, x_sample2, true);
+[xqn, ~, ~, ~] = uniformQuan(t_sample_nqyuist, x_sample_nyquist, M2);
+[xq1, ~, ~, ~] = uniformQuan(t_sample1, x_sample1, M2);
+[xq2, ~, ~, ~] = uniformQuan(t_sample2, x_sample2, M2);
 
 figure('Name', sprintf('Uniform Quantization M = %d', M2));
 
@@ -213,7 +213,7 @@ title('Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz) - Uniform Quantiza
 legend show;
 grid on;
 
-x_hat_nqyuist = reconstruct(t, x_sample_nyquist, f_Nyquist);
+x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2 = reconstruct(t, x_sample2, f_s2);
 
@@ -251,9 +251,9 @@ grid on;
 
 % -------------------------------------------------------------------------
 
-[thr, lvl, xqn, MSEn] = uniformQuan(M3, t_sample_nqyuist, x_sample_nyquist, true);
-[thr, lvl, xq1, MSE1] = uniformQuan(M3, t_sample1, x_sample1, true);
-[thr, lvl, xq2, MSE2] = uniformQuan(M3, t_sample2, x_sample2, true);
+[xqn, ~, ~, ~] = uniformQuan(t_sample_nqyuist, x_sample_nyquist, M3);
+[xq1, ~, ~, ~] = uniformQuan(t_sample1, x_sample1, M3);
+[xq2, ~, ~, ~] = uniformQuan(t_sample2, x_sample2, M3);
 
 figure('Name', sprintf('Uniform Quantization M = %d', M3));
 
@@ -332,7 +332,7 @@ M = 1:1:256;
 MSE = zeros(1, length(M));
 for i = 1:length(M)
     % Perform uniform quantization for each M value
-    [thr, lvl, xqn, MSEn(i)] = uniformQuan(M(i), t_sample_nqyuist, x_sample_nyquist, false);
+    [~, ~, ~, MSEn(i)] = uniformQuan(t_sample_nqyuist, x_sample_nyquist, M(i));
     MSE(i) = MSEn(i);
 end
 figure('Name', 'Uniform Quantizer: MSE vs M');
@@ -344,9 +344,9 @@ grid on;
 % Near-optimal quantization and overall assessment
 tgtMSE = 0.1;
 
-[thr_n, lvl_n, xq_n, MSE_n] = lloydMax(x_sample_nyquist, M1, tgtMSE);
-[thr_1, lvl_1, xq_1, MSE_1] = lloydMax(x_sample1, M1, tgtMSE);
-[thr_2, lvl_2, xq_2, MSE_2] = lloydMax(x_sample2, M1, tgtMSE);
+[thr_n, lvl_n, xq_n, ~] = lloydMax(x_sample_nyquist, M1, tgtMSE);
+[thr_1, lvl_1, xq_1, ~] = lloydMax(x_sample1, M1, tgtMSE);
+[thr_2, lvl_2, xq_2, ~] = lloydMax(x_sample2, M1, tgtMSE);
 
 figure('Name',sprintf('Lloyd-Max Quantized Signals M = %d', M1));
 subplot(3, 1, 1);
@@ -403,9 +403,9 @@ grid on;
 
 % --------------------------------------------------------------------------------------------------
 
-[thr_n, lvl_n, xq_n, MSE_n] = lloydMax(x_sample_nyquist, M2, tgtMSE);
-[thr_1, lvl_1, xq_1, MSE_1] = lloydMax(x_sample1, M2, tgtMSE);
-[thr_2, lvl_2, xq_2, MSE_2] = lloydMax(x_sample2, M2, tgtMSE);
+[thr_n, lvl_n, xq_n, ~] = lloydMax(x_sample_nyquist, M2, tgtMSE);
+[thr_1, lvl_1, xq_1, ~] = lloydMax(x_sample1, M2, tgtMSE);
+[thr_2, lvl_2, xq_2, ~] = lloydMax(x_sample2, M2, tgtMSE);
 
 figure('Name',sprintf('Lloyd-Max Quantized Signals M = %d', M2));
 subplot(3, 1, 1);
@@ -462,9 +462,9 @@ grid on;
 
 % --------------------------------------------------------------------------------------------------
 
-[thr_n, lvl_n, xq_n, MSE_n] = lloydMax(x_sample_nyquist, M3, tgtMSE);
-[thr_1, lvl_1, xq_1, MSE_1] = lloydMax(x_sample1, M3, tgtMSE);
-[thr_2, lvl_2, xq_2, MSE_2] = lloydMax(x_sample2, M3, tgtMSE);
+[thr_n, lvl_n, xq_n, ~] = lloydMax(x_sample_nyquist, M3, tgtMSE);
+[thr_1, lvl_1, xq_1, ~] = lloydMax(x_sample1, M3, tgtMSE);
+[thr_2, lvl_2, xq_2, ~] = lloydMax(x_sample2, M3, tgtMSE);
 
 figure('Name',sprintf('Lloyd-Max Quantized Signals M = %d', M3));
 subplot(3, 1, 1);

@@ -24,16 +24,16 @@ addpath('Analog\Fourier\');
 
 % ==================== 1 - SAMPLING & FOURIER ====================
 
-sampling_analysis(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY) % Signal generation is implicit in this module
+% sampling_analysis(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY) % Signal generation is implicit in this module
 
-fourier_analysis(SIGNAL_DURATION, CARRIER_FREQUENCY) % Signal generation is implicit in this module
+% fourier_analysis(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY) % Signal generation is implicit in this module
 
 % ==================== 2 - QUANTIZATION ====================
 
-quantization_analysis(SIGNAL_DURATION, CARRIER_FREQUENCY) % Signal generation is implicit in this module
+% quantization_analysis(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY) % Signal generation is implicit in this module
 
 % % ==================== 3 - CODING, DECODING... ====================
-[t, xt, f_max] = exampleSpeechWave(SIGNAL_DURATION, CARRIER_FREQUENCY);
+[t, xt, f_max] = AMWave(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY);
 f_Nyquist = 2*f_max;
 [t_sample, x_sample] = sample(t, xt, f_Nyquist);
 results_table_lm = table();
@@ -41,7 +41,7 @@ results_table_u  = table();
 
 for q = quantizer_levels
     % -------- QUANTIZATION --------
-    [thr_u, lvl_u, xq_u, MSE] = uniformQuan(q, x_sample, t_sample, false);
+    [thr_u, lvl_u, xq_u, MSE] = uniformQuan(t_sample, x_sample, q);
     [thr_lm, lvl_lm, xq_lm, MSE_quant] = lloydMax(x_sample, q, TARGET_MSE);
 
     % -------- LOSSLESS CODING (Huffman) --------
