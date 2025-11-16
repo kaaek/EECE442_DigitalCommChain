@@ -7,9 +7,10 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function [t, xt, f_max] = AMWave(DURATION, F_M, F_C)
-    t = 0:0.001:DURATION;
-    % t = linspace(0, DURATION, DURATION*1e6);
-    f_max = F_C + F_M;
-    xt = (1 + 0.5*cos(2*pi*F_M*t)) .* cos(2*pi*F_C*t); % Just an AM-modulated wave
+function xrcon = reconstruct(T_TARGET, X_SAMPLE, F_S)
+    t_sample = (0:length(X_SAMPLE)-1)/F_S;
+    xrcon = zeros(size(T_TARGET));
+    for k = 1:length(X_SAMPLE)
+        xrcon = xrcon + X_SAMPLE(k) * sinc(F_S*(T_TARGET - t_sample(k))); % Add the contribution of the k-th sample to the reconstructed signal (with sinc interpolation)
+    end
 end

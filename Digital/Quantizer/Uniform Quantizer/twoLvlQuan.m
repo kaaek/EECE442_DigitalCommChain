@@ -7,9 +7,12 @@
 % * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
-function [t, xt, f_max] = AMWave(DURATION, F_M, F_C)
-    t = 0:0.001:DURATION;
-    % t = linspace(0, DURATION, DURATION*1e6);
-    f_max = F_C + F_M;
-    xt = (1 + 0.5*cos(2*pi*F_M*t)) .* cos(2*pi*F_C*t); % Just an AM-modulated wave
+function xq = twoLvlQuan(t, xt)
+    t_1 = mean(xt);
+    l_1 = (min(xt)+t_1)/2;
+    l_2 = (max(xt)+t_1)/2;
+    
+    thr = [t_1];
+    lvl = [l_1, l_2];
+    xq = quan(xt, thr, lvl);
 end
