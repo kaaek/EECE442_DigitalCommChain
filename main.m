@@ -19,6 +19,7 @@ addpath('Digital\Quantizer\Lloyd-Max Quantizer\');
 addpath('Digital\Encoder\');
 addpath('Analog\');
 addpath('Analog\Fourier\');
+addpath('Analog\Modulator\');
 
 [SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY, TARGET_MSE, quantizer_levels, block_sizes] = constants()
 
