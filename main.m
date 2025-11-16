@@ -49,11 +49,11 @@ for q = quantizer_levels
     encoded_lm = baseline_huffman_V2(xq_lm);
 
     % Decode symbols
-    decoded_symbols_u = encoded_u.decoded_symbols;
-    [~, decoded_idx_u] = ismember(decoded_symbols_u, string(lvl_u));
+    decoded_numeric_u = str2double(encoded_u.decoded_symbols);
+    [~, decoded_idx_u] = ismember(decoded_numeric_u, lvl_u);
 
-    decoded_symbols_lm = encoded_lm.decoded_symbols;
-    [~, decoded_idx_lm] = ismember(decoded_symbols_lm, string(lvl_lm));
+    decoded_numeric_lm = str2double(encoded_lm.decoded_symbols);
+    [~, decoded_idx_lm] = ismember(decoded_numeric_lm, lvl_lm);
 
     % -------- DEQUANTIZATION --------
     x_dequant_u = lvl_u(decoded_idx_u);
