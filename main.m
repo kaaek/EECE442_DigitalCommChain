@@ -47,8 +47,12 @@ idx = 0;
 for q = quantizer_levels
     idx = idx + 1;
     % -------- QUANTIZATION --------
-    [xq_u, lvl_u, thr_u, MSE_quant_u] = uniformQuan(t_sample, x_sample, q);
-    [thr_lm, lvl_lm, xq_lm, MSE_quant_lm] = lloydMax(x_sample, q, TARGET_MSE);
+    [xq_u, lvl_u, thr_u, ~] = uniformQuan(t_sample, x_sample, q);
+    [thr_lm, lvl_lm, xq_lm, ~] = lloydMax(x_sample, q, TARGET_MSE);
+    
+    % Compute discrete MSE for quantization (sample-based, not integral-based)
+    MSE_quant_u = mean((x_sample(:) - xq_u(:)).^2);
+    MSE_quant_lm = mean((x_sample(:) - xq_lm(:)).^2);
 
     % -------- LOSSLESS CODING (Huffman) --------
     encoded_u = baseline_huffman_V2(xq_u);
@@ -58,16 +62,6 @@ for q = quantizer_levels
     % Convert each string element to a number
     decoded_u = arrayfun(@str2double, encoded_u.decoded_symbols);
     decoded_lm = arrayfun(@str2double, encoded_lm.decoded_symbols);
-    
-    % Verify lossless encoding for this iteration
-    if idx == 1
-        fprintf('Debug first iteration (q=%d):\n', q);
-        fprintf('  xq_u size: %dx%d\n', size(xq_u));
-        fprintf('  decoded_u size: %dx%d\n', size(decoded_u));
-        fprintf('  Original xq_u (first 10): \n'); disp(xq_u(1:min(10,end)));
-        fprintf('  Decoded (first 10): \n'); disp(decoded_u(1:min(10,end)));
-        fprintf('  Match: %d\n', isequal(xq_u(:), decoded_u(:)));
-    end
 
     % -------- DEQUANTIZATION --------
     % The decoded values should already be the quantization levels
