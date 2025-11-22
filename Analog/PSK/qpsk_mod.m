@@ -1,5 +1,5 @@
 function x = qpsk_mod(b, A)
-if ~(ischar(b) && length(b) == 2 && all(ismember(str, ['0', '1'])))
+if ~(ischar(b) && length(b) == 2 && all(ismember(b, ['0', '1'])))
     error('The string is not a valid two-bit binary string.');
 end
 switch b
