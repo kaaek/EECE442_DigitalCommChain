@@ -13,14 +13,10 @@ function [xq, lvl, thr, MSEE] = uniformQuan(t, xt, M)
     xq = quantize(xt, thr, lvl); % Quantize the original signal using the calculated thresholds and levels
     MSEE = MSE(xt, xq, t);
     
-    % if print
-    %     fprintf('-----------------------------------------------------------------');
-    %     fprintf('\nUNIFORM QUANTIZER (Number of Quantization Levels M = %s)', num2str(M));
-    %     fprintf('\nQUANTIZATION LEVELS:\n');
-    %     fprintf('%.4f ', lvl);
-    %     fprintf('\nTHRESHOLDS:\n');
-    %     fprintf('%.4f ', thr);
-    %     fprintf('\nMEAN SQUARED ERROR (MSE): %.4e\n', MSE);
-    %     fprintf('\n\n\n');
-    % end
+    fprintf('\nUNIFORM QUANTIZER (M = %s)', num2str(M));
+    fprintf('\nQUANTIZATION LEVELS:\n');
+    fprintf('%.4f ', lvl);
+    fprintf('\nTHRESHOLDS:\n');
+    fprintf('%.4f ', thr);
+    fprintf('\nMEAN SQUARED ERROR (MSE): %.4e\n\n', MSEE);
 end

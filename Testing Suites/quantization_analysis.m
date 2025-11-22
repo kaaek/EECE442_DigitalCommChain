@@ -1,101 +1,35 @@
 % ----------------------------------------------------------------------
 % authors: Khalil El Kaaki, Mouhammad Kandakji
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
 % ----------------------------------------------------------------------
 
 function quantization_analysis(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY)
 
-fprintf('==========================================\n');
-fprintf('   2.1 Quantization Analysis running...\n');
-fprintf('==========================================\n');
+fprintf(repmat('=',1,70));
+fprintf('\n   2.1 Quantization Analysis running...\n');
+fprintf(repmat('=',1,70));
 
+% The below sampling is quiet since this is not the suite for sampling
 [t, xt, f_max]  = AMWave(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY);
 f_Nyquist       = 2*f_max;
 f_s1            = 0.5*f_Nyquist;   % aliasing case
 f_s2            = 2*f_Nyquist;     % valid case
-
 % Sample to discrete x[n] (note that this is the analytical notation, but
 % numerically, n is so fine we can still consider it continuous)
-
 [t_sample_nqyuist, x_sample_nyquist]    = sample(t, xt, f_Nyquist);
 [t_sample1, x_sample1]                  = sample(t, xt, f_s1);
 [t_sample2, x_sample2]                  = sample(t, xt, f_s2);
 
+% The two-level quantizer
 xqn = twoLvlQuan(x_sample_nyquist);
 xq1 = twoLvlQuan(x_sample1);
 xq2 = twoLvlQuan(x_sample2);
-
-figure('Name','Two Level Quantizer');
-
-subplot(3, 1, 1);
-plot(t_sample_nqyuist, x_sample_nyquist, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample_nqyuist, xqn, 'b-', 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b', 'LineStyle', '-');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Nyquist-Sampled Signal');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t_sample1, x_sample1, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample1, xq1, 'b-', 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b', 'LineStyle', '-');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t_sample2, x_sample2, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample2, xq2, 'b-', 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b', 'LineStyle', '-');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
-legend show;
-grid on;
-
+plotQuantizedSignals(t_sample_nqyuist, x_sample_nyquist, xqn, t_sample1, x_sample1, xq1, t_sample2, x_sample2, xq2, f_s1, f_s2, 'Two Level Quantizer', 2);
+% Reconstruct an approximate signal x^(t) from the quantized signal via sinc-interpolation
 x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2  = reconstruct(t, x_sample2, f_s2);
 
-figure('Name', 'Two-level Quantizer Reconstructed Signals');
-
-subplot(3, 1, 1);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.3]);
-hold on;
-plot(t, x_hat_nyquist, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Nyquist-Sampled Signal');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.3]);
-hold on;
-plot(t, x_hat_1, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.3]);
-hold on;
-plot(t, x_hat_2, 'b-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
-legend show;
-grid on;
+plotReconstructedSignals(t, xt, x_hat_nyquist, x_hat_1, x_hat_2, f_s1, f_s2, 'Two-level Quantizer', 2);
 
 % ----------------------------------------------------------------------
 
@@ -107,73 +41,13 @@ M3 = 32;
 [xq1, ~, ~, ~] = uniformQuan(t_sample1, x_sample1, M1);
 [xq2, ~, ~, ~] = uniformQuan(t_sample2, x_sample2, M1);
 
-figure('Name', sprintf('Uniform Quantization M = %d', M1));
-
-subplot(3, 1, 1);
-plot(t_sample_nqyuist, x_sample_nyquist, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample_nqyuist, xqn, 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Nyquist-Sampled Signal - Uniform Quantization');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t_sample1, x_sample1, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample1, xq1, 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Aliased Signal (f_s = ' + string(f_s1) + ' Hz) - Uniform Quantization');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t_sample2, x_sample2, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample2, xq2, 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz) - Uniform Quantization');
-legend show;
-grid on;
+plotQuantizedSignals(t_sample_nqyuist, x_sample_nyquist, xqn, t_sample1, x_sample1, xq1, t_sample2, x_sample2, xq2, f_s1, f_s2, 'Uniform Quantization', M1);
 
 x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2 = reconstruct(t, x_sample2, f_s2);
 
-figure('Name', sprintf('Uniform Quantizer M = %d Reconstructed Signals', M1));
-
-subplot(3, 1, 1);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_nyquist, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Nyquist-Sampled Signal');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_1, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_2, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
-legend show;
-grid on;
+plotReconstructedSignals(t, xt, x_hat_nyquist, x_hat_1, x_hat_2, f_s1, f_s2, 'Uniform Quantizer', M1);
 
 % ----------------------------------------------------------------------
 
@@ -181,73 +55,13 @@ grid on;
 [xq1, ~, ~, ~] = uniformQuan(t_sample1, x_sample1, M2);
 [xq2, ~, ~, ~] = uniformQuan(t_sample2, x_sample2, M2);
 
-figure('Name', sprintf('Uniform Quantization M = %d', M2));
-
-subplot(3, 1, 1);
-plot(t_sample_nqyuist, x_sample_nyquist, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample_nqyuist, xqn, 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Nyquist-Sampled Signal - Uniform Quantization');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t_sample1, x_sample1, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample1, xq1, 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Aliased Signal (f_s = ' + string(f_s1) + ' Hz) - Uniform Quantization');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t_sample2, x_sample2, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample2, xq2, 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz) - Uniform Quantization');
-legend show;
-grid on;
+plotQuantizedSignals(t_sample_nqyuist, x_sample_nyquist, xqn, t_sample1, x_sample1, xq1, t_sample2, x_sample2, xq2, f_s1, f_s2, 'Uniform Quantization', M2);
 
 x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2 = reconstruct(t, x_sample2, f_s2);
 
-figure('Name', sprintf('Uniform Quantizer M = %d Reconstructed Signals', M2));
-
-subplot(3, 1, 1);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_nyquist, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Nyquist-Sampled Signal');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_1, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_2, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
-legend show;
-grid on;
+plotReconstructedSignals(t, xt, x_hat_nyquist, x_hat_1, x_hat_2, f_s1, f_s2, 'Uniform Quantizer', M2);
 
 % -------------------------------------------------------------------------
 
@@ -255,73 +69,13 @@ grid on;
 [xq1, ~, ~, ~] = uniformQuan(t_sample1, x_sample1, M3);
 [xq2, ~, ~, ~] = uniformQuan(t_sample2, x_sample2, M3);
 
-figure('Name', sprintf('Uniform Quantization M = %d', M3));
-
-subplot(3, 1, 1);
-plot(t_sample_nqyuist, x_sample_nyquist, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample_nqyuist, xqn, 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b', 'MarkerEdgeColor', 'b', 'LineWidth', 2);
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Nyquist-Sampled Signal - Uniform Quantization');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t_sample1, x_sample1, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample1, xq1, 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b', 'MarkerEdgeColor', 'b', 'LineWidth', 2);
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Aliased Signal (f_s = ' + string(f_s1) + ' Hz) - Uniform Quantization');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t_sample2, x_sample2, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t_sample2, xq2, 'DisplayName', 'x_q[n]', 'LineWidth', 1.5, 'Color', 'b', 'MarkerFaceColor', 'b', 'MarkerEdgeColor', 'b', 'LineWidth', 2);
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz) - Uniform Quantization');
-legend show;
-grid on;
+plotQuantizedSignals(t_sample_nqyuist, x_sample_nyquist, xqn, t_sample1, x_sample1, xq1, t_sample2, x_sample2, xq2, f_s1, f_s2, 'Uniform Quantization', M3);
 
 x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2 = reconstruct(t, x_sample2, f_s2);
 
-figure('Name', sprintf('Uniform Quantizer M = %d Reconstructed Signals', M3));
-
-subplot(3, 1, 1);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_nyquist, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Nyquist-Sampled Signal');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_1, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_2, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
-legend show;
-grid on;
+plotReconstructedSignals(t, xt, x_hat_nyquist, x_hat_1, x_hat_2, f_s1, f_s2, 'Uniform Quantizer', M3);
 
 % -------------------------------------------------------------------
 
@@ -332,14 +86,16 @@ M = 1:1:256;
 MSE = zeros(1, length(M));
 for i = 1:length(M)
     % Perform uniform quantization for each M value
-    [~, ~, ~, MSEn(i)] = uniformQuan(t_sample_nqyuist, x_sample_nyquist, M(i));
-    MSE(i) = MSEn(i);
+    [~, ~, ~, MSE_i] = uniformQuan(t_sample_nqyuist, x_sample_nyquist, M(i));
+    MSE(i) = MSE_i;
 end
 figure('Name', 'Uniform Quantizer: MSE vs M');
-plot(M, MSE, 'LineWidth', 1.5, 'Color', 'b');
-xlabel('Number of Quantization Levels (M)');
-ylabel('Mean Squared Error (MSE)');
+plot(M, MSE, 'LineWidth', 2, 'Color', [0 0.45 0.74]);
+xlabel('Number of Quantization Levels (M)', 'FontSize', 12, 'FontWeight', 'bold');
+ylabel('Mean Squared Error (MSE)', 'FontSize', 12, 'FontWeight', 'bold');
+title('MSE vs Number of Quantization Levels', 'FontSize', 14, 'FontWeight', 'bold');
 grid on;
+set(gca, 'FontSize', 10, 'LineWidth', 1);
 
 % Near-optimal quantization and overall assessment
 tgtMSE = 0.1;
@@ -351,15 +107,15 @@ tgtMSE = 0.1;
 figure('Name',sprintf('Lloyd-Max Quantized Signals M = %d', M1));
 subplot(3, 1, 1);
 plotXq(t_sample_nqyuist, x_sample_nyquist, xq_n);
-title('Lloyd-Max Quantized Nyquist-Sampled Signal');
+title('Nyquist Sampling', 'FontSize', 12, 'FontWeight', 'bold');
 
 subplot(3, 1, 2);
 plotXq(t_sample1, x_sample1, xq_1);
-title('Lloyd-Max Quantized Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
+title(sprintf('Undersampled (f_s = %.2f Hz)', f_s1), 'FontSize', 12, 'FontWeight', 'bold');
 
 subplot(3, 1, 3);
 plotXq(t_sample2, x_sample2, xq_2);
-title('Lloyd-Max Quantized Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
+title(sprintf('Oversampled (f_s = %.2f Hz)', f_s2), 'FontSize', 12, 'FontWeight', 'bold');
 
 plotPdf(x_sample_nyquist, thr_n, lvl_n, M1);
 plotPdf(x_sample1, thr_1, lvl_1, M1);
@@ -369,37 +125,7 @@ x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2 = reconstruct(t, x_sample2, f_s2);
 
-figure('Name', sprintf('Lloyd-Max Quantizer M = %d Reconstructed Signals', M1));
-
-subplot(3, 1, 1);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_nyquist, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Nyquist-Sampled Signal');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_1, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_2, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
-legend show;
-grid on;
+plotReconstructedSignals(t, xt, x_hat_nyquist, x_hat_1, x_hat_2, f_s1, f_s2, 'Lloyd-Max Quantizer', M1);
 
 % --------------------------------------------------------------------------------------------------
 
@@ -410,15 +136,15 @@ grid on;
 figure('Name',sprintf('Lloyd-Max Quantized Signals M = %d', M2));
 subplot(3, 1, 1);
 plotXq(t_sample_nqyuist, x_sample_nyquist, xq_n);
-title('Lloyd-Max Quantized Nyquist-Sampled Signal');
+title('Nyquist Sampling', 'FontSize', 12, 'FontWeight', 'bold');
 
 subplot(3, 1, 2);
 plotXq(t_sample1, x_sample1, xq_1);
-title('Lloyd-Max Quantized Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
+title(sprintf('Undersampled (f_s = %.2f Hz)', f_s1), 'FontSize', 12, 'FontWeight', 'bold');
 
 subplot(3, 1, 3);
 plotXq(t_sample2, x_sample2, xq_2);
-title('Lloyd-Max Quantized Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
+title(sprintf('Oversampled (f_s = %.2f Hz)', f_s2), 'FontSize', 12, 'FontWeight', 'bold');
 
 plotPdf(x_sample_nyquist, thr_n, lvl_n, M2);
 plotPdf(x_sample1, thr_1, lvl_1, M2);
@@ -428,37 +154,7 @@ x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2 = reconstruct(t, x_sample2, f_s2);
 
-figure('Name', sprintf('Lloyd-Max Quantizer M = %d Reconstructed Signals', M2));
-
-subplot(3, 1, 1);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_nyquist, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Nyquist-Sampled Signal');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_1, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_2, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
-legend show;
-grid on;
+plotReconstructedSignals(t, xt, x_hat_nyquist, x_hat_1, x_hat_2, f_s1, f_s2, 'Lloyd-Max Quantizer', M2);
 
 % --------------------------------------------------------------------------------------------------
 
@@ -469,15 +165,15 @@ grid on;
 figure('Name',sprintf('Lloyd-Max Quantized Signals M = %d', M3));
 subplot(3, 1, 1);
 plotXq(t_sample_nqyuist, x_sample_nyquist, xq_n);
-title('Lloyd-Max Quantized Nyquist-Sampled Signal');
+title('Nyquist Sampling', 'FontSize', 12, 'FontWeight', 'bold');
 
 subplot(3, 1, 2);
 plotXq(t_sample1, x_sample1, xq_1);
-title('Lloyd-Max Quantized Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
+title(sprintf('Undersampled (f_s = %.2f Hz)', f_s1), 'FontSize', 12, 'FontWeight', 'bold');
 
 subplot(3, 1, 3);
 plotXq(t_sample2, x_sample2, xq_2);
-title('Lloyd-Max Quantized Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
+title(sprintf('Oversampled (f_s = %.2f Hz)', f_s2), 'FontSize', 12, 'FontWeight', 'bold');
 
 plotPdf(x_sample_nyquist, thr_n, lvl_n, M3);
 plotPdf(x_sample1, thr_1, lvl_1, M3);
@@ -487,39 +183,102 @@ x_hat_nyquist = reconstruct(t, x_sample_nyquist, f_Nyquist);
 x_hat_1 = reconstruct(t, x_sample1, f_s1);
 x_hat_2  = reconstruct(t, x_sample2, f_s2);
 
-figure('Name', sprintf('Lloyd-Max Quantizer M = %d Reconstructed Signals', M3));
-
-subplot(3, 1, 1);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_nyquist, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Nyquist-Sampled Signal');
-legend show;
-grid on;
-
-subplot(3, 1, 2);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_1, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Aliased Signal (f_s = ' + string(f_s1) + ' Hz)');
-legend show;
-grid on;
-
-subplot(3, 1, 3);
-plot(t, xt, 'r--', 'DisplayName', 'x[n]', 'LineWidth', 1.5, 'Color', [1 0 0 0.5]);
-hold on;
-plot(t, x_hat_2, 'g-', 'DisplayName', 'x\^[n]', 'LineWidth', 1.5, 'Color', 'g');
-xlabel('Time (s)');
-ylabel('Amplitude (V)');
-title('Reconstructed Validly Sampled Signal (f_s = ' + string(f_s2) + ' Hz)');
-legend show;
-grid on;
+plotReconstructedSignals(t, xt, x_hat_nyquist, x_hat_1, x_hat_2, f_s1, f_s2, 'Lloyd-Max Quantizer', M3);
 
 
+end
+
+function plotQuantizedSignals(t_sample_nqyuist, x_sample_nyquist, xq_n, t_sample1, x_sample1, xq_1, t_sample2, x_sample2, xq_2, f_s1, f_s2, quantizer_name, M)
+    % PLOTQUANTIZEDSIGNALS Creates a 3-subplot figure showing quantized signals
+    %
+    % Inputs:
+    %   t_sample_nqyuist, x_sample_nyquist, xq_n - Nyquist sampled data
+    %   t_sample1, x_sample1, xq_1 - Aliased sampled data
+    %   t_sample2, x_sample2, xq_2 - Validly sampled data
+    %   f_s1, f_s2 - Sampling frequencies
+    %   quantizer_name - Name of quantizer (e.g., 'Uniform Quantization')
+    %   M - Number of quantization levels
+    
+    figure('Name', sprintf('%s M = %d', quantizer_name, M));
+    
+    subplot(3, 1, 1);
+    plot(t_sample_nqyuist, x_sample_nyquist, '--', 'DisplayName', 'Original', 'LineWidth', 2, 'Color', [0.85 0.33 0.1]);
+    hold on;
+    stem(t_sample_nqyuist, xq_n, 'DisplayName', 'Quantized', 'LineWidth', 1.5, 'Marker', 'o', 'MarkerSize', 4, 'Color', [0 0.45 0.74], 'MarkerFaceColor', [0 0.45 0.74]);
+    xlabel('Time (s)', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Amplitude (V)', 'FontSize', 11, 'FontWeight', 'bold');
+    title('Nyquist Sampling', 'FontSize', 12, 'FontWeight', 'bold');
+    legend('show', 'Location', 'best', 'FontSize', 9);
+    grid on;
+    set(gca, 'FontSize', 9, 'LineWidth', 1);
+    
+    subplot(3, 1, 2);
+    plot(t_sample1, x_sample1, '--', 'DisplayName', 'Original', 'LineWidth', 2, 'Color', [0.85 0.33 0.1]);
+    hold on;
+    stem(t_sample1, xq_1, 'DisplayName', 'Quantized', 'LineWidth', 1.5, 'Marker', 'o', 'MarkerSize', 4, 'Color', [0 0.45 0.74], 'MarkerFaceColor', [0 0.45 0.74]);
+    xlabel('Time (s)', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Amplitude (V)', 'FontSize', 11, 'FontWeight', 'bold');
+    title(sprintf('Undersampled (f_s = %.2f Hz)', f_s1), 'FontSize', 12, 'FontWeight', 'bold');
+    legend('show', 'Location', 'best', 'FontSize', 9);
+    grid on;
+    set(gca, 'FontSize', 9, 'LineWidth', 1);
+    
+    subplot(3, 1, 3);
+    plot(t_sample2, x_sample2, '--', 'DisplayName', 'Original', 'LineWidth', 2, 'Color', [0.85 0.33 0.1]);
+    hold on;
+    stem(t_sample2, xq_2, 'DisplayName', 'Quantized', 'LineWidth', 1.5, 'Marker', 'o', 'MarkerSize', 4, 'Color', [0 0.45 0.74], 'MarkerFaceColor', [0 0.45 0.74]);
+    xlabel('Time (s)', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Amplitude (V)', 'FontSize', 11, 'FontWeight', 'bold');
+    title(sprintf('Oversampled (f_s = %.2f Hz)', f_s2), 'FontSize', 12, 'FontWeight', 'bold');
+    legend('show', 'Location', 'best', 'FontSize', 9);
+    grid on;
+    set(gca, 'FontSize', 9, 'LineWidth', 1);
+end
+
+function plotReconstructedSignals(t, xt, x_hat_nyquist, x_hat_1, x_hat_2, f_s1, f_s2, quantizer_name, M)
+    % PLOTRECONSTRUCTEDSIGNALS Creates a 3-subplot figure showing reconstructed signals
+    %
+    % Inputs:
+    %   t, xt - Original continuous signal
+    %   x_hat_nyquist, x_hat_1, x_hat_2 - Reconstructed signals
+    %   f_s1, f_s2 - Sampling frequencies
+    %   quantizer_name - Name of quantizer
+    %   M - Number of quantization levels
+    
+    figure('Name', sprintf('%s M = %d Reconstructed Signals', quantizer_name, M));
+    
+    subplot(3, 1, 1);
+    plot(t, xt, '--', 'DisplayName', 'Original', 'LineWidth', 2.5, 'Color', [0.85 0.33 0.1]);
+    hold on;
+    plot(t, x_hat_nyquist, '-', 'DisplayName', 'Reconstructed', 'LineWidth', 1.5, 'Color', [0.47 0.67 0.19]);
+    xlabel('Time (s)', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Amplitude (V)', 'FontSize', 11, 'FontWeight', 'bold');
+    title('Nyquist Sampling', 'FontSize', 12, 'FontWeight', 'bold');
+    legend('show', 'Location', 'best', 'FontSize', 9);
+    grid on;
+    set(gca, 'FontSize', 9, 'LineWidth', 1);
+    
+    subplot(3, 1, 2);
+    plot(t, xt, '--', 'DisplayName', 'Original', 'LineWidth', 2.5, 'Color', [0.85 0.33 0.1]);
+    hold on;
+    plot(t, x_hat_1, '-', 'DisplayName', 'Reconstructed', 'LineWidth', 1.5, 'Color', [0.47 0.67 0.19]);
+    xlabel('Time (s)', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Amplitude (V)', 'FontSize', 11, 'FontWeight', 'bold');
+    title(sprintf('Undersampled (f_s = %.2f Hz)', f_s1), 'FontSize', 12, 'FontWeight', 'bold');
+    legend('show', 'Location', 'best', 'FontSize', 9);
+    grid on;
+    set(gca, 'FontSize', 9, 'LineWidth', 1);
+    
+    subplot(3, 1, 3);
+    plot(t, xt, '--', 'DisplayName', 'Original', 'LineWidth', 2.5, 'Color', [0.85 0.33 0.1]);
+    hold on;
+    plot(t, x_hat_2, '-', 'DisplayName', 'Reconstructed', 'LineWidth', 1.5, 'Color', [0.47 0.67 0.19]);
+    xlabel('Time (s)', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Amplitude (V)', 'FontSize', 11, 'FontWeight', 'bold');
+    title(sprintf('Oversampled (f_s = %.2f Hz)', f_s2), 'FontSize', 12, 'FontWeight', 'bold');
+    legend('show', 'Location', 'best', 'FontSize', 9);
+    grid on;
+    set(gca, 'FontSize', 9, 'LineWidth', 1);
 end
 
 function plotXq(t, x_samples, xq)
@@ -537,15 +296,15 @@ function plotXq(t, x_samples, xq)
     %
     % Example:
     %   plotXq(t, x_samples, xq);
-    plot(t, x_samples, 'r--', 'DisplayName', 'x[n]', 'Color', [1 0 0 0.5]);
+    plot(t, x_samples, '--', 'DisplayName', 'Original', 'LineWidth', 2, 'Color', [0.85 0.33 0.1]);
     hold on;
-    plot(t, xq, 'b-', 'DisplayName', 'x^[n]');
+    stem(t, xq, 'DisplayName', 'Quantized', 'LineWidth', 1.5, 'Marker', 'o', 'MarkerSize', 4, 'Color', [0 0.45 0.74], 'MarkerFaceColor', [0 0.45 0.74]);
     hold off;
-    legend show;
-    title('Lloyd-Max Quantizer: x[n] VS x^[n]');
-    xlabel('Time (s)');
-    ylabel('Amplitude (V)');
-    grid on;                                                      % Add grid for better visualization
+    legend('show', 'Location', 'best', 'FontSize', 9);
+    xlabel('Time (s)', 'FontSize', 11, 'FontWeight', 'bold');
+    ylabel('Amplitude (V)', 'FontSize', 11, 'FontWeight', 'bold');
+    grid on;
+    set(gca, 'FontSize', 9, 'LineWidth', 1);
 end
 
 function plotPdf(x_samples, thr, lvl, M)
@@ -566,19 +325,21 @@ function plotPdf(x_samples, thr, lvl, M)
     
     % Get the empirical PDF from the sampled sequence x_samples
     x_samples = real(x_samples);  % Disregard imaginary part
-    nbins = min(max(80, round(length(x_samples) / 10)), 200);               % Determine number of bins based on data length
-    [pdf, edges] = histcounts(x_samples, nbins, 'Normalization', 'pdf');    % Counts the number of occurrences of the values in the sample → empirical PDF
+    nbins = min(max(80, round(length(x_samples) / 10)), 200);
+    [pdf, edges] = histcounts(x_samples, nbins, 'Normalization', 'pdf');
     centers = (edges(1:end-1) + edges(2:end)) / 2;
 
     figure('Name', ['Lloyd-Max Empirical PDF, M = ' num2str(M)]);
-    plot(centers, pdf, 'LineWidth', 2, 'Color', 'b');                      % Change color to blue for the empirical PDF
+    plot(centers, pdf, 'LineWidth', 2, 'Color', [0 0.45 0.74]);
     hold on;
     for k = 1:length(thr)
-        plot([thr(k) thr(k)], ylim, '--y', 'LineWidth', 1.5);
+        plot([thr(k) thr(k)], ylim, '--', 'LineWidth', 2, 'Color', [0.93 0.69 0.13]);
     end
-    stem(lvl, interp1(centers, pdf, lvl, 'linear', 'extrap'), 'r', 'filled', 'LineWidth', 1.5); % Increase line width for stems
-    legend('Empirical PDF', 'Thresholds', 'Quantization Levels (red stems)');
-    title('Empirical PDF of Lloyd-Max Quantizer M = %d', M);
-    xlabel('x');
-    ylabel('Pr\{x\}');
+    stem(lvl, interp1(centers, pdf, lvl, 'linear', 'extrap'), 'filled', 'LineWidth', 2, 'MarkerSize', 8, 'Color', [0.85 0.33 0.1], 'MarkerFaceColor', [0.85 0.33 0.1]);
+    legend('PDF', 'Thresholds', 'Levels', 'Location', 'best', 'FontSize', 10);
+    title(sprintf('Lloyd-Max Empirical PDF (M = %d)', M), 'FontSize', 14, 'FontWeight', 'bold');
+    xlabel('Amplitude', 'FontSize', 12, 'FontWeight', 'bold');
+    ylabel('Probability Density', 'FontSize', 12, 'FontWeight', 'bold');
+    grid on;
+    set(gca, 'FontSize', 10, 'LineWidth', 1);
 end

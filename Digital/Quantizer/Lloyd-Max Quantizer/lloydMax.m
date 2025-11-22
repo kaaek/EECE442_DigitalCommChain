@@ -41,10 +41,8 @@ function [thr, lvl, xq, MSE] = lloydMax(x_samples, M, tgtMSE)
     end
     xq = quantize(x_samples, thr, lvl);
     MSE = mean((x_samples - xq).^2);
-    fprintf('-----------------------------------------------------------------');
-    fprintf('\nLLOYD-MAX QUANTIZER (Number of Quantization Levels M = %s)', num2str(M));
-    fprintf('\nMEAN SQUARE ERROR (MSE): %.4f\n', MSE);
-    fprintf('\n\n\n');
+    fprintf('\nLLOYD-MAX QUANTIZER (M = %s), ', num2str(M));
+    fprintf('MEAN SQUARE ERROR (MSE): %.6f\n', MSE);
 end
 
 function f_x = map(x, thr, lvl)
