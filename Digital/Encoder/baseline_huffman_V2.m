@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% author: Mouhamad Kandakji
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function R = baseline_huffman_V2(x, opts)
 % BASELINE_HUFFMAN  Baseline Huffman Coding (symbol-wise) + Tree Plot
 

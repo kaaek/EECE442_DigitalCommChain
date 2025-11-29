@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% author: Khalil El Kaaki
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function [thr, lvl, xq, MSE] = lloydMax(x_samples, M, tgtMSE)
     % LLOYDMAX Quantization using Lloyd-Max Algorithm
     %
@@ -41,8 +32,8 @@ function [thr, lvl, xq, MSE] = lloydMax(x_samples, M, tgtMSE)
     end
     xq = quantize(x_samples, thr, lvl);
     MSE = mean((x_samples - xq).^2);
-    fprintf('\nLLOYD-MAX QUANTIZER (M = %s), ', num2str(M));
-    fprintf('MEAN SQUARE ERROR (MSE): %.6f\n', MSE);
+    % fprintf('\nLLOYD-MAX QUANTIZER (M = %s), ', num2str(M));
+    % fprintf('MEAN SQUARE ERROR (MSE): %.6f\n', MSE);
 end
 
 function f_x = map(x, thr, lvl)

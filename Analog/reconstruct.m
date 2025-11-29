@@ -1,13 +1,7 @@
-% ----------------------------------------------------------------------
-% author: Khalil El Kaaki
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function xrcon = reconstruct(T_TARGET, X_SAMPLE, F_S)
+    % RECONSTRUCT Reconstructs continuous signal from samples using sinc interpolation
+    %   Input: T_TARGET (target time points), X_SAMPLE (sample values), F_S (sampling rate Hz)
+    %   Output: xrcon (reconstructed signal values at T_TARGET)
     t_sample = (0:length(X_SAMPLE)-1)/F_S;
     xrcon = zeros(size(T_TARGET));
     for k = 1:length(X_SAMPLE)

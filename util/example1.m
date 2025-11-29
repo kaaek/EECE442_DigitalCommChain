@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% author: Khalil El Kaaki
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function [T, x_sample1, fs1, x_sample2, fs2] = example1(f0) % Sample a pure (cosine) tone at frequencies 0.5*fN and 2*fN example.
     T = 0:0.001:1;          % Time axis for the original signal (approximately continuous.)
     X = cos(2*pi*f0*T);     % Array of cosine values.

@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% author: Khalil El Kaaki
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function xq = quantize(x, thr, lvl)
     xq = zeros(size(x));
     for i = 1:length(x)

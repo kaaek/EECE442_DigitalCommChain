@@ -1,4 +1,6 @@
 function bitstream = random_bitstream(BITSTREAM_LENGTH)
+    % RANDOM_BITSTREAM Generates random bit sequence of specified length (default 10e6)
+    %   Input: BITSTREAM_LENGTH (number of bits, default 10e6). Output: bitstream (logical array)
 arguments
     BITSTREAM_LENGTH (1,1) {mustBePositive, mustBeInteger} = 10e6; % Default length is 10e6 bits
 end

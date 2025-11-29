@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% author: Khalil El Kaaki
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function xq = twoLvlQuan(xt)
     t_1 = mean(xt);
     l_1 = (min(xt)+t_1)/2;

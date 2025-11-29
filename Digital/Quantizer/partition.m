@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% author: Khalil El Kaaki
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function lvl = partition(x, thr, M, lvl_prev)
     lvl = zeros(1, M);
     for k = 1:M                                  % For the k-th region

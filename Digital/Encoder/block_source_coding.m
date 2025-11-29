@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% author: Mouhamad Kandakji
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function [results, artifacts] = block_source_coding(seq, A, K_values, verify_lossless)
 % BLOCK_SOURCE_CODING with built-in decode display + bit throughput, robust artifacts
 
@@ -73,7 +64,8 @@ for K = K_values
   fixed_bits_per_symbol = fixed_bits_per_block / K;
 
   % ---------- (f)(ii) Huffman encode/decode ----------
-  Rblk = baseline_huffman_V2(string(blkSyms));   
+  opts_blk = struct('metadata', sprintf('Block | K=%d', K));
+  Rblk = baseline_huffman_V2(string(blkSyms), opts_blk);   
 
   L_emp_block = fetchfield_safe(Rblk, ["huffman_avg_bits_per_symbol","avg_bits_per_symbol","Lavg_block"], NaN);
   L_emp_sym   = L_emp_block / K;

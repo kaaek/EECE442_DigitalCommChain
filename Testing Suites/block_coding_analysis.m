@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% author: Mouhammad Kandakji
-%
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% * Dark-mode edits by ChatGPT
-% ----------------------------------------------------------------------
 function [cmp_tbl, results_uniform, results_lloydmax, decoded_uniform, decoded_lloydmax, is_lossless_uniform, is_lossless_lloydmax] = ...
     block_coding_analysis(seq_uniform, seq_lloydmax, A, K_values, verify_lossless)
 
@@ -131,10 +122,10 @@ disp(cmp_tbl);
 % ===== Losslessness summary =====
 if verify_lossless
     fprintf('\n==================== LOSSLESSNESS CHECKS (from artifacts, K=1) ====================\n');
-    fprintf('Uniform:   %s\n',   ternary(is_lossless_uniform,  'PASS (decoded == original)', ...
-                                                        ternary(isempty(decoded_uniform),'N/A (decoded not found)','FAIL (decoded ~= original)')));
-    fprintf('Lloyd–Max: %s\n',   ternary(is_lossless_lloydmax, 'PASS (decoded == original)', ...
-                                                        ternary(isempty(decoded_lloydmax),'N/A (decoded not found)','FAIL (decoded ~= original)')));
+    fprintf('Uniform:   %s\n',   ternary(is_lossless_uniform,  '[PASS] decoded == original', ...
+                                                        ternary(isempty(decoded_uniform),'[N/A] decoded not found','[FAIL] decoded ~= original')));
+    fprintf('Lloyd-Max: %s\n',   ternary(is_lossless_lloydmax, '[PASS] decoded == original', ...
+                                                        ternary(isempty(decoded_lloydmax),'[N/A] decoded not found','[FAIL] decoded ~= original')));
 end
 
 % ===== Plot 1: Bits per symbol vs K =====

@@ -1,12 +1,3 @@
-% ----------------------------------------------------------------------
-% authors: Khalil El Kaaki, Mouhammad Kandakji
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function coding_decoding_analysis(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FREQUENCY, TARGET_MSE, quantizer_levels)
 % CODING_DECODING_ANALYSIS Analyzes full communication chain with Huffman coding
 %   Performs quantization (Uniform and Lloyd-Max), Huffman encoding/decoding,
@@ -35,11 +26,18 @@ function coding_decoding_analysis(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FR
         'VariableNames', {'M','MSE_quant','MSE_final','TotalBits','BitsPerSymbol','Latency'});
 
     idx = 0;
+    seq_uniform_all = [];
+    seq_lloydmax_all = [];
+    
     for q = quantizer_levels
         idx = idx + 1;
         % -------- QUANTIZATION --------
         [xq_u, lvl_u, thr_u, ~] = uniformQuan(t_sample, x_sample, q);
         [thr_lm, lvl_lm, xq_lm, ~] = lloydMax(x_sample, q, TARGET_MSE);
+        
+        % Store sequences for block coding analysis
+        seq_uniform_all = xq_u;
+        seq_lloydmax_all = xq_lm;
         
         % Compute discrete MSE for quantization (sample-based, not integral-based)
         MSE_quant_u = mean((x_sample(:) - xq_u(:)).^2);
@@ -74,6 +72,12 @@ function coding_decoding_analysis(SIGNAL_DURATION, MESSAGE_FREQUENCY, CARRIER_FR
         results_table_u(idx,:) = {q, MSE_quant_u, MSE_final_u, total_bits_u, bits_per_symbol_u, latency_symbols_u};
         results_table_lm(idx,:) = {q, MSE_quant_lm, MSE_final_lm, total_bits_lm, bits_per_symbol_lm, latency_symbols_lm};
     end
+    
+    % -------- BLOCK CODING ANALYSIS --------
+    % Get alphabet values from the quantized sequences
+    A_values = unique([seq_uniform_all(:); seq_lloydmax_all(:)])';
+    K_values = [1 2 3 4];
+    block_coding_analysis(seq_uniform_all, seq_lloydmax_all, A_values, K_values, true);
 
     % Verify lossless compression
     fprintf('\n================= VERIFICATION =================\n');

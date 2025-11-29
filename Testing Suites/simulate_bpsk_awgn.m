@@ -1,6 +1,6 @@
 function ber_bpsk = simulate_bpsk_awgn(BITSTREAM_LENGTH, SNRdB)
 % SIMULATE_BPSK_AWGN 
-%   Runs a complete BPSK AWGN simulation using your custom mod/demod.
+%   Runs a complete BPSK AWGN simulation using custom mod/demod.
 %   Generates random bits, modulates, adds AWGN, demodulates, 
 %   computes BER and plots results.
 %
@@ -20,8 +20,8 @@ function ber_bpsk = simulate_bpsk_awgn(BITSTREAM_LENGTH, SNRdB)
     end
 
     % ---------- Generate random bits ----------
-    bits_logical = random_bitstream(BITSTREAM_LENGTH);
-    bits = double(bits_logical(:));         % numeric column vector
+    bits_logical = random_bitstream(BITSTREAM_LENGTH);  % 1xBITSTREAM_LENGTH logical array
+    bits = double(bits_logical(:));                     % numeric column vector: size BITSTREAM_LENGTHx1
     Nbits = length(bits);
 
     % ---------- Initialize BER result ----------

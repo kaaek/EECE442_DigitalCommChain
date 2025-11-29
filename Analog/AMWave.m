@@ -1,15 +1,8 @@
-% ----------------------------------------------------------------------
-% author: Khalil El Kaaki
-% 
-% Note on the use of AI:
-% * Copilot wrote the help sections for our functions
-%       (the big comment blocks following function declarations)
-% * ChatGPT only corrected minor logical and syntax errors.
-% ----------------------------------------------------------------------
-
 function [t, xt, f_max] = AMWave(DURATION, F_M, F_C)
+    % AMWAVE Generates AM-modulated signal with specified message and carrier frequencies
+    %   Computes: xt(t) = (1 + 0.5*m(t)) * cos(2*pi*f_c*t), where m(t) = cos(2*pi*f_m*t)
+    %   Output: t (time vector), xt (modulated signal), f_max (maximum frequency component)
     t = 0:0.001:DURATION;
-    % t = linspace(0, DURATION, DURATION*1e6);
     f_max = F_C + F_M;
     xt = (1 + 0.5*cos(2*pi*F_M*t)) .* cos(2*pi*F_C*t); % Just an AM-modulated wave
 end

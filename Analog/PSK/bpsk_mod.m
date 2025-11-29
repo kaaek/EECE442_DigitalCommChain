@@ -1,4 +1,6 @@
 function x = bpsk_mod(b, A)
+    % BPSK_MOD Modulates binary bit (0 or 1) to BPSK constellation point
+    %   Input: b (0 or 1), A (amplitude). Output: x (complex BPSK symbol: -A for b=0, +A for b=1)
 if isempty(b)
     error('Input binary sequence b cannot be empty.');
 end
